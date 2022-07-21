@@ -133,7 +133,7 @@ export default function StakeModalFarmingTiers({
         <div className='ml-a f f-ac farming-tier__hint'>
           <HelpCircle color='#347CC9' size={'14px'} />
           <a
-            href='https://help.algebra.finance/en/farm/multi-level-farming-on-algebra'
+            href={`${process.env.REACT_APP_V3_FARMS_HELP_BASE_URL}/en/farm/multi-level-farming-on-algebra`}
             target={'_blank'}
             rel={'noreferrer noopener'}
             className='ml-05'
