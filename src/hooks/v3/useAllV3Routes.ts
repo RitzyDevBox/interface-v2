@@ -1,11 +1,10 @@
 import { Currency } from '@uniswap/sdk-core';
-import { useActiveWeb3React } from 'hooks';
-import { Pool } from 'lib/src/pool';
-import { Route } from 'lib/src/route';
+import { Pool, Route } from 'v3lib/entities';
 import { useMemo } from 'react';
 import { useUserSingleHopOnly } from 'state/user/v3/hooks';
 // import { useUserSingleHopOnly } from '../state/user/hooks'
 import { useV3SwapPools } from './useV3SwapPools';
+import { useActiveWeb3React } from 'hooks';
 
 /**
  * Returns true if poolA is equivalent to poolB
