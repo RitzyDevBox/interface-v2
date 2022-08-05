@@ -51,14 +51,6 @@ export function useAllV3Ticks(
     },
   );
 
-  // const { isLoading, isError, error, isUninitialized, data } = {
-  //   isLoading: false,
-  //   isError: false,
-  //   error: {},
-  //   isUninitialized: false,
-  //   data: { ticks: [] },
-  // };
-
   return {
     isLoading,
     isUninitialized,
@@ -81,6 +73,7 @@ export function usePoolActiveLiquidity(
   activeTick: number | undefined;
   data: TickProcessed[] | undefined;
 } {
+  console.log('usePoolActiveLiquidity hook monitor', { currencyA, currencyB });
   const pool = usePool(currencyA, currencyB);
 
   // Find nearest valid tick for pool in case tick is not initialized.
@@ -94,15 +87,6 @@ export function usePoolActiveLiquidity(
     currencyB,
     feeAmount,
   );
-  // testing crash fix
-  // const { isLoading, isUninitialized, isError, error, ticks } = {
-  //   isLoading: false,
-  //   isUninitialized: false,
-  //   isError: false,
-  //   error: {},
-  //   ticks: [],
-  // };
-  //
 
   return useMemo(() => {
     if (

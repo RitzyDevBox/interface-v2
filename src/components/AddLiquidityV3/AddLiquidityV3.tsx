@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { Box, Button } from '@material-ui/core';
+import { Box } from '@material-ui/core';
 import {
-  CurrencyInput,
   TransactionErrorContent,
   TransactionConfirmationModal,
   ConfirmationModalContent,
@@ -25,13 +24,9 @@ import {
 } from 'state/transactions/hooks';
 import { useIsExpertMode, useUserSlippageTolerance } from 'state/user/hooks';
 import {
-  maxAmountSpend,
   addMaticToMetamask,
-  calculateSlippageAmount,
   calculateGasMargin,
-  returnTokenFromKey,
   isSupportedNetwork,
-  formatTokenAmount,
   calculateSlippageAmountV3,
 } from 'utils';
 import { wrappedCurrency } from 'utils/wrappedCurrency';
@@ -51,9 +46,6 @@ import {
 import { ConfirmationModalContentV3 } from 'components/TransactionConfirmationModal/TransactionConfirmationModal';
 import CurrencySelect from 'components/CurrencySelect';
 import {
-  useActivePreset,
-  useInitialTokenPrice,
-  useInitialUSDPrices,
   useRangeHopCallbacks,
   useV3DerivedMintInfo,
   useV3MintActionHandlers,
@@ -61,27 +53,26 @@ import {
 } from 'state/mint/v3/hooks';
 import { useCurrency } from 'hooks/v3/Tokens';
 import { NONFUNGIBLE_POSITION_MANAGER_ADDRESSES } from 'constants/v3/addresses';
-import useUSDCPrice from 'utils/useUSDCPrice';
 import { Bound, updateSelectedPreset } from 'state/mint/v3/actions';
 import { SelectRange } from './SelectRange';
-import { useAppDispatch } from 'state/hooks';
-import { useHistory } from 'react-router-dom';
+
 import usePrevious from 'hooks/usePrevious';
 import { PoolState } from 'hooks/v3/usePools';
 import { useUSDCValue } from 'hooks/v3/useUSDCPrice';
-import { tryParseAmount } from 'state/swap/v3/hooks';
-import { IPresetArgs } from './components/PresetRanges';
-import { Presets } from 'state/mint/v3/reducer';
 import { PriceFormats } from './components/PriceFomatToggler';
 import { toToken } from 'constants/v3/routing';
 import { GlobalValue } from 'constants/index';
+import { CurrencyAmount } from '@uniswap/sdk-core';
+import { maxAmountSpend } from 'utils/v3/maxAmountSpend';
+import CurrencyInputV3 from 'components/CurrencyInputV3';
+import { useCurrencyBalances } from 'state/wallet/v3/hooks';
 
 const AddLiquidityV3: React.FC<{
-  currencyId0?: string;
-  currencyId1?: string;
-  tokenId?: string;
+  // currencyId0?: string;
+  // currencyId1?: string;
+  // tokenId?: string;
   handleSettingsOpen: (flag: boolean) => void;
-}> = ({ currencyId0, currencyId1, tokenId, handleSettingsOpen }) => {
+}> = () => {
   const { t } = useTranslation();
   const [addLiquidityErrorMessage, setAddLiquidityErrorMessage] = useState<
     string | null
@@ -98,9 +89,6 @@ const AddLiquidityV3: React.FC<{
 
   const expertMode = useIsExpertMode();
 
-  const hasExistingPosition = false; //!!existingPositionDetails && !positionLoading;
-  // const { position: existingPosition } = useDerivedPositionInfo(existingPositionDetails);
-  const existingPosition = undefined; // useDerivedPositionInfo(existingPositionDetails);
   const feeAmount = 100;
 
   const {
@@ -122,18 +110,7 @@ const AddLiquidityV3: React.FC<{
       ? undefined
       : currencyB;
 
-  // const { startPriceTypedValue } = useV3MintState();
-  const history = useHistory();
-
-  const dispatch = useAppDispatch();
-  const activePreset = useActivePreset();
-
-  const currencyAUSDC = useUSDCPrice(baseCurrency ?? undefined);
-  const currencyBUSDC = useUSDCPrice(quoteCurrency ?? undefined);
-
   const derivedMintInfo = useV3DerivedMintInfo(
-    // baseCurrency ?? undefined,
-    // quoteCurrency ?? undefined,
     feeAmount,
     baseCurrency ?? undefined,
     undefined,
@@ -170,9 +147,6 @@ const AddLiquidityV3: React.FC<{
 
   const pendingText = t('supplyingTokens', 'liquidityTokenData');
 
-  // todo handle new pair and currency selection
-
-  //
   const stepPair = useMemo(() => {
     return Boolean(
       baseCurrency &&
@@ -265,61 +239,49 @@ const AddLiquidityV3: React.FC<{
     mintInfo.pool,
   );
 
-  const tokenA = (baseCurrency ?? undefined)?.wrapped;
-  const tokenB = (quoteCurrency ?? undefined)?.wrapped;
+  // get formatted amounts
+  const formattedAmounts = {
+    [independentField]: typedValue,
+    [mintInfo.dependentField]:
+      mintInfo.parsedAmounts[mintInfo.dependentField]?.toSignificant(6) ?? '',
+  };
 
-  const isSorted = useMemo(() => {
-    return tokenA && tokenB && tokenA.sortsBefore(tokenB);
-  }, [tokenA, tokenB, mintInfo]);
+  const usdcValues = {
+    [Field.CURRENCY_A]: useUSDCValue(
+      mintInfo.parsedAmounts[Field.CURRENCY_A],
+      true,
+    ),
+    [Field.CURRENCY_B]: useUSDCValue(
+      mintInfo.parsedAmounts[Field.CURRENCY_B],
+      true,
+    ),
+  };
 
-  const leftPrice = useMemo(() => {
-    return isSorted ? priceLower : priceUpper?.invert();
-  }, [isSorted, priceLower, priceUpper, mintInfo]);
+  const currencyBalances = useCurrencyBalances(account ?? undefined, [
+    baseCurrency ?? undefined,
+    quoteCurrency ?? undefined,
+  ]);
 
-  const rightPrice = useMemo(() => {
-    return isSorted ? priceUpper : priceLower?.invert();
-  }, [isSorted, priceUpper, priceLower, mintInfo]);
+  // get the max amounts user can add
+  const maxAmounts: { [field in Field]?: CurrencyAmount<Currency> } = [
+    Field.CURRENCY_A,
+    Field.CURRENCY_B,
+  ].reduce((accumulator, field) => {
+    return {
+      ...accumulator,
+      [field]: maxAmountSpend(mintInfo.currencyBalances[field]),
+    };
+  }, {});
 
-  const price = useMemo(() => {
-    if (!mintInfo.price) return;
-
-    return mintInfo.invertPrice
-      ? mintInfo.price.invert().toSignificant(5)
-      : mintInfo.price.toSignificant(5);
-  }, [mintInfo]);
-
-  const currentPriceInUSD = useUSDCValue(
-    tryParseAmount(Number(price).toFixed(5), currencyB ?? undefined),
-    true,
-  );
-
-  const isBeforePrice = useMemo(() => {
-    if (!price || !leftPrice || !rightPrice) return false;
-
-    return mintInfo.outOfRange && price > rightPrice.toSignificant(5);
-  }, [price, leftPrice, rightPrice, mintInfo]);
-
-  const isAfterPrice = useMemo(() => {
-    if (!price || !leftPrice || !rightPrice) return false;
-
-    return mintInfo.outOfRange && price < leftPrice.toSignificant(5);
-  }, [price, leftPrice, rightPrice, mintInfo]);
-
-  const handlePresetRangeSelection = useCallback(
-    (preset: IPresetArgs | null) => {
-      if (!price) return;
-
-      dispatch(updateSelectedPreset({ preset: preset ? preset.type : null }));
-
-      if (preset && preset.type === Presets.FULL) {
-        getSetFullRange();
-      } else {
-        onLeftRangeInput(preset ? String(+price * preset.min) : '');
-        onRightRangeInput(preset ? String(+price * preset.max) : '');
-      }
-    },
-    [price],
-  );
+  const atMaxAmounts: { [field in Field]?: CurrencyAmount<Currency> } = [
+    Field.CURRENCY_A,
+    Field.CURRENCY_B,
+  ].reduce((accumulator, field) => {
+    return {
+      ...accumulator,
+      [field]: maxAmounts[field]?.equalTo(mintInfo.parsedAmounts[field] ?? '0'),
+    };
+  }, {});
 
   // non v3 states
 
@@ -338,17 +300,6 @@ const AddLiquidityV3: React.FC<{
   );
 
   const [currencyModalOpen, setCurrencyModalOpen] = useState(false);
-
-  // todo: add max amount checks
-  // const atMaxAmounts: { [field in Field]?: CurrencyAmount<Currency> } = [
-  //   Field.CURRENCY_A,
-  //   Field.CURRENCY_B,
-  // ].reduce((accumulator, field) => {
-  //   return {
-  //     ...accumulator,
-  //     [field]: maxAmounts[field]?.equalTo(parsedAmounts[field] ?? '0'),
-  //   };
-  // }, {});
 
   const handleCurrencyASelect = useCallback(
     (currencyA: Token) => {
@@ -689,6 +640,7 @@ const AddLiquidityV3: React.FC<{
 
   return (
     <Box>
+      {console.log('start rendering AddLiquidityV3')}
       <Box className='flex justify-between items-center'>
         <StyledLabel fontSize='16px'>{t('supplyLiquidity')}</StyledLabel>
         <Box className='flex items-center'>
@@ -715,7 +667,7 @@ const AddLiquidityV3: React.FC<{
             </Box>
           </Box>
           <Box className='headingItem'>
-            <SettingsIcon onClick={() => handleSettingsOpen(true)} />
+            {/* <SettingsIcon onClick={() => handleSettingsOpen(true)} /> */}
           </Box>
         </Box>
       </Box>
@@ -798,7 +750,7 @@ const AddLiquidityV3: React.FC<{
           Deposit Amounts
         </Box>
         <Box mb={2}>
-          {/* <CurrencyInput
+          <CurrencyInputV3
             id='add-liquidity-input-tokena'
             title={`${t('token')} 1:`}
             currency={mintInfo?.currencies[Field.CURRENCY_A]}
@@ -817,17 +769,17 @@ const AddLiquidityV3: React.FC<{
               )
             }
             handleCurrencySelect={(currency: any) => {
-              console.log('selected currency', currency);
-              setSelectedCurrency0(currency?.address || currency?.symbol);
+              handleCurrencyASelect(currency);
             }}
-            amount={ formattedAmounts[Field.CURRENCY_A]}
+            amount={formattedAmounts[Field.CURRENCY_A]}
+            usdValue={usdcValues[Field.CURRENCY_A]}
+            balance={currencyBalances?.[0]}
             setAmount={onFieldAInput}
-            // bgClass={currencyBgClass}
-          /> */}
+          />
         </Box>
 
         <Box>
-          {/* <CurrencyInput
+          <CurrencyInputV3
             id='add-liquidity-input-tokenb'
             title={`${t('token')} 2:`}
             showHalfButton={Boolean(maxAmounts[Field.CURRENCY_B])}
@@ -846,13 +798,13 @@ const AddLiquidityV3: React.FC<{
               onFieldBInput(maxAmounts[Field.CURRENCY_B]?.toExact() ?? '')
             }
             handleCurrencySelect={(currency: any) => {
-              console.log('select', currency);
-              setSelectedCurrency1(currency?.address || currency?.symbol);
+              handleCurrencyBSelect(currency);
             }}
             amount={formattedAmounts[Field.CURRENCY_B]}
+            usdValue={usdcValues[Field.CURRENCY_B]}
+            balance={currencyBalances?.[1]}
             setAmount={onFieldBInput}
-            // bgClass={currencyBgClass}
-          /> */}
+          />
         </Box>
 
         <Box className='flex-wrap' mt={2.5}>
@@ -869,7 +821,6 @@ const AddLiquidityV3: React.FC<{
                     }
                   >
                     <StyledButton
-                      // fullWidth
                       onClick={async () => {
                         setApprovingA(true);
                         try {

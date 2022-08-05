@@ -20,6 +20,7 @@ async function fetchAllV3Ticks(
       };
     }
 
+    console.log('fetching v3 ticks ', variables);
     const { data, errors } = await client.query<AllV3TicksQuery>({
       query: V3_TICKS(variables.poolInfo.poolAddress, variables.poolInfo.skip),
       // variables: variables,

@@ -3,11 +3,7 @@ import { Currency } from '@uniswap/sdk-core';
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { Box } from '@material-ui/core';
 import './index.scss';
-import {
-  Bound,
-  updateCurrentStep,
-  updateSelectedPreset,
-} from 'state/mint/v3/actions';
+import { Bound, updateSelectedPreset } from 'state/mint/v3/actions';
 import {
   IDerivedMintInfo,
   useRangeHopCallbacks,
@@ -19,7 +15,6 @@ import { useAppDispatch } from 'state/hooks';
 import { useActivePreset } from 'state/mint/v3/hooks';
 import { Presets } from 'state/mint/v3/reducer';
 import { PriceFormats } from '../components/PriceFomatToggler';
-import { tryParseAmount } from 'state/swap/v3/hooks';
 import { useHistory } from 'react-router-dom';
 
 import { RangeSelector } from '../components/RangeSelector';
@@ -139,11 +134,6 @@ export function SelectRange({
       : mintInfo.price.toSignificant(5);
   }, [mintInfo]);
 
-  const currentPriceInUSD = useUSDCValue(
-    tryParseAmount(Number(price).toFixed(5), currencyB ?? undefined),
-    true,
-  );
-
   const isBeforePrice = useMemo(() => {
     if (!price || !leftPrice || !rightPrice) return false;
 
@@ -171,16 +161,6 @@ export function SelectRange({
     },
     [price],
   );
-
-  useEffect(() => {
-    return () => {
-      if (history.action === 'POP') {
-        dispatch(updateCurrentStep({ currentStep: backStep }));
-      }
-    };
-  }, []);
-
-  const INPUT_RANGE_VALUES = ['Full Range', 'Safe', 'Common', 'Expert'];
 
   const [aprs, setAprs] = useState<undefined | { [key: string]: number }>();
 
@@ -263,28 +243,33 @@ export function SelectRange({
         priceFormat={priceFormat}
       />
       {/* </Box> */}
-      {/* todo: fix price range chart UI */}
-      <LiquidityChartRangeInput
-        currencyA={currencyA ?? undefined}
-        currencyB={currencyB ?? undefined}
-        feeAmount={mintInfo.dynamicFee}
-        ticksAtLimit={mintInfo.ticksAtLimit}
-        price={
-          priceFormat === PriceFormats.USD
-            ? currentPriceInUSD
-              ? parseFloat(currentPriceInUSD.toSignificant(5))
+      {/* Todo: fix rerendering and enable range chart */}
+      {/* {!currencyA || !currencyB ? (
+        <div>...</div>
+      ) : (
+        <LiquidityChartRangeInput
+          currencyA={currencyA ?? undefined}
+          currencyB={currencyB ?? undefined}
+          feeAmount={mintInfo.dynamicFee}
+          ticksAtLimit={mintInfo.ticksAtLimit}
+          price={
+            priceFormat === PriceFormats.USD
+              ? currentPriceInUSD
+                ? parseFloat(currentPriceInUSD.toSignificant(5))
+                : undefined
+              : price
+              ? parseFloat(price)
               : undefined
-            : price
-            ? parseFloat(price)
-            : undefined
-        }
-        priceLower={priceLower}
-        priceUpper={priceUpper}
-        onLeftRangeInput={onLeftRangeInput}
-        onRightRangeInput={onRightRangeInput}
-        interactive={false}
-        priceFormat={priceFormat}
-      />
+          }
+          priceLower={priceLower}
+          priceUpper={priceUpper}
+          onLeftRangeInput={onLeftRangeInput}
+          onRightRangeInput={onRightRangeInput}
+          interactive={false}
+          priceFormat={priceFormat}
+        />
+      )} */}
+
       {mintInfo.outOfRange && (
         <div className='range__notification out-of-range'>
           <div>Out of range</div>

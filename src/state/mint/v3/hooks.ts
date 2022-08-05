@@ -8,8 +8,7 @@ import {
   Token,
 } from '@uniswap/sdk-core';
 import { Token as TokenV2 } from '@uniswap/sdk';
-import { CurrencyAmount as CurrencyAmountV2 } from '@uniswap/sdk';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { AppState } from '../../index';
 import { tryParseAmount } from '../../swap/v3/hooks';
 import { useCurrencyBalances } from '../../wallet/v3/hooks';
@@ -161,8 +160,6 @@ export function useV3MintActionHandlers(
 }
 
 export function useV3DerivedMintInfo(
-  // currencyA?: Currency,
-  // currencyB?: Currency,
   feeAmount?: FeeAmount,
   baseCurrency?: Currency,
   // override for existing position
@@ -197,6 +194,7 @@ export function useV3DerivedMintInfo(
   const { account, chainId } = useActiveWeb3React();
   const { t } = useTranslation();
 
+  console.log('start mintInfo hook');
   const {
     independentField,
     typedValue,
@@ -260,7 +258,7 @@ export function useV3DerivedMintInfo(
 
   const noLiquidity = poolState === PoolState.NOT_EXISTS;
 
-  const dynamicFee = pool ? pool.fee : 100;
+  const dynamicFee = pool ? pool?.fee : 100;
 
   // note to parse inputs in reverse
   const invertPrice = Boolean(baseToken && token0 && !baseToken.equals(token0));
@@ -446,7 +444,10 @@ export function useV3DerivedMintInfo(
     | CurrencyAmount<Currency>
     | undefined = tryParseAmount(typedValue, currencies[independentField]);
 
-  const dependentAmount: CurrencyAmount<Currency> | undefined = useMemo(() => {
+  const dependentAmount:
+    | CurrencyAmount<Currency>
+    | null
+    | undefined = useMemo(() => {
     // we wrap the currencies just to get the price in terms of the other token
     const wrappedIndependentAmount = independentAmount?.wrapped;
     const dependentCurrency =
@@ -515,11 +516,11 @@ export function useV3DerivedMintInfo(
     return {
       [Field.CURRENCY_A]:
         independentField === Field.CURRENCY_A
-          ? independentAmount
-          : dependentAmount,
+          ? independentAmount ?? undefined
+          : dependentAmount ?? undefined,
       [Field.CURRENCY_B]:
         independentField === Field.CURRENCY_A
-          ? dependentAmount
+          ? dependentAmount ?? undefined
           : independentAmount,
     };
   }, [dependentAmount, independentAmount, independentField]);
@@ -648,23 +649,13 @@ export function useV3DerivedMintInfo(
 
   if (
     currencyAAmount &&
-    currencyBalances?.[Field.CURRENCY_A]?.lessThan(currencyAAmount.toExact())
+    currencyBalances?.[Field.CURRENCY_A]?.lessThan(currencyAAmount)
   ) {
     errorMessage = t`Insufficient ${
       currencies[Field.CURRENCY_A]?.symbol
     } balance`;
     errorCode = errorCode ?? 4;
   }
-
-  // if (
-  //   currencyBAmount &&
-  //   currencyBalances?.[Field.CURRENCY_B]?.lessThan(currencyBAmount.toExact())
-  // ) {
-  //   errorMessage = t`Insufficient ${
-  //     currencies[Field.CURRENCY_B]?.symbol
-  //   } balance`;
-  //   errorCode = errorCode ?? 5;
-  // }
 
   const invalidPool = poolState === PoolState.INVALID;
 

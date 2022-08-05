@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Box } from '@material-ui/core';
 import { ReactComponent as SettingsIcon } from 'assets/images/SettingsIcon.svg';
 import { AddLiquidity, QuestionHelper, SettingsModal } from 'components';
@@ -20,6 +20,13 @@ const SupplyLiquidity: React.FC<{ isV3: boolean }> = ({ isV3 }) => {
     parsedQuery && parsedQuery.currency1
       ? (parsedQuery.currency1 as string)
       : undefined,
+  );
+
+  const handleSettingsModalOpen = useCallback(
+    (flag: boolean) => {
+      setOpenSettingsModal(flag);
+    },
+    [openSettingsModal, setOpenSettingsModal],
   );
 
   return (
@@ -61,7 +68,7 @@ const SupplyLiquidity: React.FC<{ isV3: boolean }> = ({ isV3 }) => {
           // currencyId0={''}
           // currencyId1={''}
           // tokenId={''}
-          handleSettingsOpen={setOpenSettingsModal}
+          handleSettingsOpen={handleSettingsModalOpen}
         />
       )}
     </>

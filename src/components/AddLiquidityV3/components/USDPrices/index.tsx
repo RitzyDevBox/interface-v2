@@ -1,5 +1,3 @@
-import { DollarSign, StopCircle } from 'react-feather';
-
 import { Currency, Token, Price } from '@uniswap/sdk-core';
 
 import { PriceFormats } from '../PriceFomatToggler';
@@ -67,12 +65,50 @@ export function USDPrices({
 
   return (
     <Box className='flex justify-center items-center' mt={1} mb={1}>
-      <StyledLabel fontSize='12px' style={{ marginRight: 5 }}>
+      {/* //todo fix prices ui according to design */}
+      {/* <StyledLabel fontSize='12px' style={{ marginRight: 5 }}>
         Current Price: 0.55{' '}
       </StyledLabel>
       <StyledLabel fontSize='12px' color='#696c80'>
         USDT per Matic
-      </StyledLabel>
+      </StyledLabel> */}
+
+      {hasUSDPrices ? (
+        !isUSD ? (
+          <div className='fs-085'>
+            <div className='mb-05'>{`1 ${currencyA.symbol} = $ ${usdA ||
+              '???'}`}</div>
+            <div className='mb-05'>{`1 ${currencyB.symbol} = $ ${usdB ||
+              '???'}`}</div>
+          </div>
+        ) : (
+          <div className='fs-085'>
+            {usdA && usdB ? (
+              <>
+                <div className='mb-05'>{`1 ${currencyA.symbol} = ${parseFloat(
+                  String(+usdA / (+usdB || 1)),
+                )} ${currencyB.symbol}`}</div>
+                <div className='mb-05'>{`1 ${currencyB.symbol} = ${parseFloat(
+                  String(+usdB / (+usdA || 1)),
+                )} ${currencyA.symbol}`}</div>
+              </>
+            ) : (
+              <>
+                <div className='mb-05'>{`1 ${currencyA.symbol} = ${usdA ||
+                  '???'} ${currencyB.symbol}`}</div>
+                <div className='mb-05'>{`1 ${currencyB.symbol} = ${usdB ||
+                  '???'} ${currencyA.symbol}`}</div>
+              </>
+            )}
+          </div>
+        )
+      ) : !loadingTimedout ? (
+        <div>Fetching price...</div>
+      ) : (
+        <div>
+          <div>Can't fetch prices</div>
+        </div>
+      )}
     </Box>
   );
 }

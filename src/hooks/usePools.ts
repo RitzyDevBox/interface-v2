@@ -148,6 +148,8 @@ export function usePool(
     Currency | undefined,
   ][] = useMemo(() => [[currencyA, currencyB]], [currencyA, currencyB]);
 
+  console.log('runing outside pool', { poolKeys });
+
   return usePools(poolKeys)[0];
 }
 
