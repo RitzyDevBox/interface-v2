@@ -161,8 +161,6 @@ export function useV3MintActionHandlers(
 
 export function useV3DerivedMintInfo(
   feeAmount?: FeeAmount,
-  baseCurrency?: Currency,
-  // override for existing position
   existingPosition?: Position,
 ): {
   pool?: Pool | null;
@@ -220,6 +218,8 @@ export function useV3DerivedMintInfo(
     }),
     [currencyA, currencyB],
   );
+
+  const baseCurrency = useCurrency(currencyAId);
 
   // formatted with tokens
   // formatted with tokens

@@ -51,17 +51,13 @@ import {
   useV3MintActionHandlers,
   useV3MintState,
 } from 'state/mint/v3/hooks';
-import { useCurrency } from 'hooks/v3/Tokens';
 import { NONFUNGIBLE_POSITION_MANAGER_ADDRESSES } from 'constants/v3/addresses';
-import { Bound, updateSelectedPreset } from 'state/mint/v3/actions';
 import { SelectRange } from './SelectRange';
 
 import usePrevious from 'hooks/usePrevious';
 import { PoolState } from 'hooks/v3/usePools';
 import { useUSDCValue } from 'hooks/v3/useUSDCPrice';
 import { PriceFormats } from './components/PriceFomatToggler';
-import { toToken } from 'constants/v3/routing';
-import { GlobalValue } from 'constants/index';
 import { CurrencyAmount } from '@uniswap/sdk-core';
 import { maxAmountSpend } from 'utils/v3/maxAmountSpend';
 import CurrencyInputV3 from 'components/CurrencyInputV3';
@@ -71,7 +67,7 @@ const AddLiquidityV3: React.FC<{
   // currencyId0?: string;
   // currencyId1?: string;
   // tokenId?: string;
-  handleSettingsOpen: (flag: boolean) => void;
+  // handleSettingsOpen: (flag: boolean) => void;
 }> = () => {
   const { t } = useTranslation();
   const [addLiquidityErrorMessage, setAddLiquidityErrorMessage] = useState<
@@ -101,20 +97,7 @@ const AddLiquidityV3: React.FC<{
     [Field.CURRENCY_B]: { currencyId: currencyBId },
   } = useV3MintState();
 
-  const baseCurrency = useCurrency(currencyAId);
-  const currencyB = useCurrency(currencyBId);
-  // prevent an error if they input ETH/WETH
-  //TODO
-  const quoteCurrency =
-    baseCurrency && currencyB && baseCurrency.wrapped.equals(currencyB.wrapped)
-      ? undefined
-      : currencyB;
-
-  const derivedMintInfo = useV3DerivedMintInfo(
-    feeAmount,
-    baseCurrency ?? undefined,
-    undefined,
-  );
+  const derivedMintInfo = useV3DerivedMintInfo(feeAmount);
   const prevDerivedMintInfo = usePrevious({ ...derivedMintInfo });
 
   const mintInfo = useMemo(() => {
@@ -134,7 +117,16 @@ const AddLiquidityV3: React.FC<{
     return {
       ...derivedMintInfo,
     };
-  }, [derivedMintInfo, baseCurrency, quoteCurrency]);
+  }, [derivedMintInfo]);
+
+  const baseCurrency = mintInfo?.currencies?.[Field.CURRENCY_A];
+  const currencyB = mintInfo?.currencies?.[Field.CURRENCY_B];
+  // prevent an error if they input ETH/WETH
+  //TODO
+  const quoteCurrency =
+    baseCurrency && currencyB && baseCurrency.wrapped.equals(currencyB.wrapped)
+      ? undefined
+      : currencyB;
 
   const {
     onFieldAInput,
@@ -165,94 +157,31 @@ const AddLiquidityV3: React.FC<{
     );
   }, [mintInfo]);
 
-  const stepAmounts = useMemo(() => {
-    if (mintInfo.outOfRange) {
-      return Boolean(
-        mintInfo.parsedAmounts[Field.CURRENCY_A] ||
-          (mintInfo.parsedAmounts[Field.CURRENCY_B] && account),
-      );
-    }
-    return Boolean(
-      mintInfo.parsedAmounts[Field.CURRENCY_A] &&
-        mintInfo.parsedAmounts[Field.CURRENCY_B] &&
-        account,
-    );
-  }, [mintInfo]);
-
   const stepInitialPrice = useMemo(() => {
     return mintInfo.noLiquidity
       ? Boolean(+startPriceTypedValue && account)
       : false;
   }, [mintInfo, startPriceTypedValue]);
 
-  const steps = useMemo(() => {
-    if (mintInfo.noLiquidity) {
-      return [stepPair, stepInitialPrice, stepRange, stepAmounts];
-    }
-
-    return [stepPair, stepRange, stepAmounts];
-  }, [stepPair, stepRange, stepAmounts, stepInitialPrice, mintInfo]);
-
   const [allowedSlippage] = useUserSlippageTolerance();
 
   const deadline = useTransactionDeadline(); // custom from users settings
 
-  const isStablecoinPair = useMemo(() => {
-    if (!baseCurrency || !quoteCurrency) return false;
-
-    const stablecoins = [
-      toToken(GlobalValue.tokens.COMMON.USDC).address,
-      toToken(GlobalValue.tokens.COMMON.USDT).address,
-      toToken(GlobalValue.tokens.COMMON.MI).address,
-    ];
-
-    return (
-      stablecoins.includes(baseCurrency.wrapped.address) &&
-      stablecoins.includes(quoteCurrency.wrapped.address)
-    );
-  }, [baseCurrency, quoteCurrency]);
-
-  // get value and prices at ticks
-  const { [Bound.LOWER]: tickLower, [Bound.UPPER]: tickUpper } = useMemo(() => {
-    return mintInfo.ticks;
-  }, [mintInfo]);
-
-  const {
-    [Bound.LOWER]: priceLower,
-    [Bound.UPPER]: priceUpper,
-  } = useMemo(() => {
-    return mintInfo.pricesAtTicks;
-  }, [mintInfo]);
-
-  const {
-    getDecrementLower,
-    getIncrementLower,
-    getDecrementUpper,
-    getIncrementUpper,
-    getSetFullRange,
-  } = useRangeHopCallbacks(
-    baseCurrency ?? undefined,
-    quoteCurrency ?? undefined,
-    mintInfo.dynamicFee,
-    tickLower,
-    tickUpper,
-    mintInfo.pool,
-  );
-
   // get formatted amounts
   const formattedAmounts = {
     [independentField]: typedValue,
-    [mintInfo.dependentField]:
-      mintInfo.parsedAmounts[mintInfo.dependentField]?.toSignificant(6) ?? '',
+    [mintInfo?.dependentField]:
+      mintInfo?.parsedAmounts?.[mintInfo?.dependentField]?.toSignificant(6) ??
+      '',
   };
 
   const usdcValues = {
     [Field.CURRENCY_A]: useUSDCValue(
-      mintInfo.parsedAmounts[Field.CURRENCY_A],
+      mintInfo?.parsedAmounts?.[Field.CURRENCY_A],
       true,
     ),
     [Field.CURRENCY_B]: useUSDCValue(
-      mintInfo.parsedAmounts[Field.CURRENCY_B],
+      mintInfo?.parsedAmounts?.[Field.CURRENCY_B],
       true,
     ),
   };
@@ -269,7 +198,7 @@ const AddLiquidityV3: React.FC<{
   ].reduce((accumulator, field) => {
     return {
       ...accumulator,
-      [field]: maxAmountSpend(mintInfo.currencyBalances[field]),
+      [field]: maxAmountSpend(mintInfo?.currencyBalances?.[field]),
     };
   }, {});
 
@@ -279,7 +208,9 @@ const AddLiquidityV3: React.FC<{
   ].reduce((accumulator, field) => {
     return {
       ...accumulator,
-      [field]: maxAmounts[field]?.equalTo(mintInfo.parsedAmounts[field] ?? '0'),
+      [field]: maxAmounts[field]?.equalTo(
+        mintInfo?.parsedAmounts?.[field] ?? '0',
+      ),
     };
   }, {});
 
@@ -291,11 +222,11 @@ const AddLiquidityV3: React.FC<{
   const [approvingB, setApprovingB] = useState(false);
   // check whether the user has approved the router on the tokens
   const [approvalA, approveACallback] = useApproveCallbackV3(
-    mintInfo?.parsedAmounts[Field.CURRENCY_A],
+    mintInfo?.parsedAmounts?.[Field.CURRENCY_A],
     chainId ? NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[chainId] : undefined,
   );
   const [approvalB, approveBCallback] = useApproveCallbackV3(
-    mintInfo?.parsedAmounts[Field.CURRENCY_B],
+    mintInfo?.parsedAmounts?.[Field.CURRENCY_B],
     chainId ? NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[chainId] : undefined,
   );
 
@@ -495,8 +426,8 @@ const AddLiquidityV3: React.FC<{
       <Box>
         <Box className='flex justify-between items-center' mt={2.5} mb={2.5}>
           <DoubleCurrencyLogo
-            currency0={mintInfo?.currencies[Field.CURRENCY_A]}
-            currency1={mintInfo?.currencies[Field.CURRENCY_B]}
+            currency0={mintInfo?.currencies?.[Field.CURRENCY_A]}
+            currency1={mintInfo?.currencies?.[Field.CURRENCY_B]}
             size={32}
           />
           <Box
@@ -640,7 +571,6 @@ const AddLiquidityV3: React.FC<{
 
   return (
     <Box>
-      {console.log('start rendering AddLiquidityV3')}
       <Box className='flex justify-between items-center'>
         <StyledLabel fontSize='16px'>{t('supplyLiquidity')}</StyledLabel>
         <Box className='flex items-center'>
@@ -667,7 +597,7 @@ const AddLiquidityV3: React.FC<{
             </Box>
           </Box>
           <Box className='headingItem'>
-            {/* <SettingsIcon onClick={() => handleSettingsOpen(true)} /> */}
+            <SettingsIcon />
           </Box>
         </Box>
       </Box>
@@ -704,8 +634,8 @@ const AddLiquidityV3: React.FC<{
         )}
         <Box className='flex justify-between items-center' mt={2.5}>
           <CurrencySelect
-            currency={mintInfo?.currencies.CURRENCY_A}
-            otherCurrency={mintInfo?.currencies.CURRENCY_B}
+            currency={mintInfo?.currencies?.CURRENCY_A}
+            otherCurrency={mintInfo?.currencies?.CURRENCY_B}
             handleCurrencySelect={(currency: any) => {
               handleCurrencyASelect(currency);
             }}
@@ -720,8 +650,8 @@ const AddLiquidityV3: React.FC<{
           </Box>
 
           <CurrencySelect
-            currency={mintInfo?.currencies.CURRENCY_B}
-            otherCurrency={mintInfo?.currencies.CURRENCY_A}
+            currency={mintInfo?.currencies?.CURRENCY_B}
+            otherCurrency={mintInfo?.currencies?.CURRENCY_A}
             handleCurrencySelect={(currency: any) => {
               handleCurrencyBSelect(currency);
             }}
@@ -753,17 +683,17 @@ const AddLiquidityV3: React.FC<{
           <CurrencyInputV3
             id='add-liquidity-input-tokena'
             title={`${t('token')} 1:`}
-            currency={mintInfo?.currencies[Field.CURRENCY_A]}
-            showHalfButton={Boolean(maxAmounts[Field.CURRENCY_A])}
-            showMaxButton={!atMaxAmounts[Field.CURRENCY_A]}
+            currency={mintInfo?.currencies?.[Field.CURRENCY_A]}
+            showHalfButton={Boolean(maxAmounts?.[Field.CURRENCY_A])}
+            showMaxButton={!atMaxAmounts?.[Field.CURRENCY_A]}
             onMax={() =>
-              onFieldAInput(maxAmounts[Field.CURRENCY_A]?.toExact() ?? '')
+              onFieldAInput(maxAmounts?.[Field.CURRENCY_A]?.toExact() ?? '')
             }
             onHalf={() =>
               onFieldAInput(
-                maxAmounts[Field.CURRENCY_A]
+                maxAmounts?.[Field.CURRENCY_A]
                   ? (
-                      Number(maxAmounts[Field.CURRENCY_A]?.toExact()) / 2
+                      Number(maxAmounts?.[Field.CURRENCY_A]?.toExact()) / 2
                     ).toString()
                   : '',
               )
@@ -771,8 +701,8 @@ const AddLiquidityV3: React.FC<{
             handleCurrencySelect={(currency: any) => {
               handleCurrencyASelect(currency);
             }}
-            amount={formattedAmounts[Field.CURRENCY_A]}
-            usdValue={usdcValues[Field.CURRENCY_A]}
+            amount={formattedAmounts?.[Field.CURRENCY_A]}
+            usdValue={usdcValues?.[Field.CURRENCY_A]}
             balance={currencyBalances?.[0]}
             setAmount={onFieldAInput}
           />
@@ -783,7 +713,7 @@ const AddLiquidityV3: React.FC<{
             id='add-liquidity-input-tokenb'
             title={`${t('token')} 2:`}
             showHalfButton={Boolean(maxAmounts[Field.CURRENCY_B])}
-            currency={mintInfo?.currencies[Field.CURRENCY_B]}
+            currency={mintInfo?.currencies?.[Field.CURRENCY_B]}
             showMaxButton={!atMaxAmounts[Field.CURRENCY_B]}
             onHalf={() =>
               onFieldBInput(
@@ -836,10 +766,10 @@ const AddLiquidityV3: React.FC<{
                     >
                       {approvalA === ApprovalState.PENDING
                         ? `${t('approving')} ${
-                            mintInfo?.currencies[Field.CURRENCY_A]?.symbol
+                            mintInfo?.currencies?.[Field.CURRENCY_A]?.symbol
                           }`
                         : `${t('approve')} ${
-                            mintInfo?.currencies[Field.CURRENCY_A]?.symbol
+                            mintInfo?.currencies?.[Field.CURRENCY_A]?.symbol
                           }`}
                     </StyledButton>
                   </Box>
@@ -867,10 +797,10 @@ const AddLiquidityV3: React.FC<{
                     >
                       {approvalB === ApprovalState.PENDING
                         ? `${t('approving')} ${
-                            mintInfo?.currencies[Field.CURRENCY_B]?.symbol
+                            mintInfo?.currencies?.[Field.CURRENCY_B]?.symbol
                           }`
                         : `${t('approve')} ${
-                            mintInfo?.currencies[Field.CURRENCY_B]?.symbol
+                            mintInfo?.currencies?.[Field.CURRENCY_B]?.symbol
                           }`}
                     </StyledButton>
                   </Box>

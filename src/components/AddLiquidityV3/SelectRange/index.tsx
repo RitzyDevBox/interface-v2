@@ -253,13 +253,11 @@ export function SelectRange({
           feeAmount={mintInfo.dynamicFee}
           ticksAtLimit={mintInfo.ticksAtLimit}
           price={
-            priceFormat === PriceFormats.USD
-              ? currentPriceInUSD
-                ? parseFloat(currentPriceInUSD.toSignificant(5))
-                : undefined
-              : price
-              ? parseFloat(price)
-              : undefined
+            // priceFormat === PriceFormats.USD
+            //   ? currentPriceInUSD
+            //     ? parseFloat(currentPriceInUSD.toSignificant(5))
+            //     : undefined
+            price ? parseFloat(price) : undefined
           }
           priceLower={priceLower}
           priceUpper={priceUpper}
