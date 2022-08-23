@@ -21,6 +21,8 @@ import { Stepper } from './components/Stepper';
 import { EnterAmounts } from './containers/EnterAmounts';
 import { SelectPair } from './containers/SelectPair';
 import { SelectRange } from './containers/SelectRange';
+import { ReactComponent as SettingsIcon } from 'assets/images/SettingsIcon.svg';
+import { ReactComponent as ArrowDownIcon } from 'assets/images/arrowDown.svg';
 
 import { Currency, Percent } from '@uniswap/sdk-core';
 
@@ -52,6 +54,12 @@ import { ZERO_PERCENT } from 'constants/v3/misc';
 import { useUserSlippageTolerance } from 'state/user/hooks';
 import { JSBI } from '@uniswap/sdk';
 import { currencyId } from 'utils/v3/currencyId';
+import { Box } from '@material-ui/core';
+import { LinkButton, StyledLabel } from '../Common/styledElements';
+import RateToggle from 'components/RateToggle';
+import { useTranslation } from 'react-i18next';
+import CurrencyInputV3 from 'components/CurrencyInputV3';
+import { isSupportedNetwork } from 'utils';
 
 const DEFAULT_ADD_IN_RANGE_SLIPPAGE_TOLERANCE = new Percent(50, 10_000);
 
@@ -59,14 +67,15 @@ export function NewAddLiquidityPage() {
   const params: any = useParams();
 
   const currencyIdA =
-    params.currencyIdA ?? '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+    params.currencyIdA ?? '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619';
   const currencyIdB =
-    params.currencyIdB ?? '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
+    params.currencyIdB ?? '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
 
   const history = useHistory();
   const [isRejected, setRejected] = useState(false);
 
   const { account, chainId } = useActiveWeb3React();
+  const { t } = useTranslation();
 
   const toggleWalletModal = useWalletModalToggle(); // toggle wallet when disconnected
 
@@ -180,11 +189,12 @@ export function NewAddLiquidityPage() {
 
   const handleCurrencyASelect = useCallback(
     (currencyANew: Currency) => {
+      console.log('token a', currencyANew);
       const [idA, idB] = handleCurrencySelect(currencyANew, currencyIdB);
       if (idB === undefined) {
-        history.push(`/add/${idA}`);
+        history.push(`/v3Pools?version=v3/${idA}`);
       } else {
-        history.push(`/add/${idA}/${idB}`);
+        history.push(`/v3Pools?version=v3/${idA}/${idB}`);
       }
     },
     [handleCurrencySelect, currencyIdB, history],
@@ -194,16 +204,16 @@ export function NewAddLiquidityPage() {
     (currencyBNew: Currency) => {
       const [idB, idA] = handleCurrencySelect(currencyBNew, currencyIdA);
       if (idA === undefined) {
-        history.push(`/add/${idB}`);
+        history.push(`/v3Pools?version=v3/${idB}`);
       } else {
-        history.push(`/add/${idA}/${idB}`);
+        history.push(`/v3Pools?version=v3/${idA}/${idB}`);
       }
     },
     [handleCurrencySelect, currencyIdA, history],
   );
 
   const handleCurrencySwap = useCallback(() => {
-    history.push(`/add/${currencyIdB}/${currencyIdA}`);
+    history.push(`/v3Pools/${currencyIdB}/${currencyIdA}`);
     resetState();
   }, [history, handleCurrencySelect, currencyIdA, currencyIdB]);
 
@@ -390,195 +400,214 @@ export function NewAddLiquidityPage() {
     }
   }, [currencyIdA, currencyIdB, history, currentStep, mintInfo.noLiquidity]);
 
+  const { ethereum } = window as any;
+  const buttonText = useMemo(() => {
+    if (account) {
+      return mintInfo?.errorMessage ?? t('Preview');
+    } else if (ethereum && !isSupportedNetwork(ethereum)) {
+      return t('switchPolygon');
+    }
+    return t('connectWallet');
+  }, [account, ethereum, mintInfo?.errorMessage, t]);
+
   return (
-    <>
-      <NavLink className={'c-p mb-1 f hover-op trans-op w-fc'} to={'/v3Pools'}>
-        <ArrowLeft size={'16px'} />
-        <p className={'ml-05'}>Pools</p>
-      </NavLink>
-      <div className='add-liquidity-page'>
-        <div className='add-liquidity-page__header f mxs_fd-c mb-1'>
-          <div className='add-liquidity-page__header-title'>Add liquidity</div>
-          <div className='ml-a mxs_ml-0 mxs_mt-1 f f-ac '>
-            {!hidePriceFormatter && (
-              <div className='mr-1'>
-                <PriceFormatToggler
-                  currentFormat={priceFormat}
-                  handlePriceFormat={handlePriceFormat}
-                />
-              </div>
-            )}
-            <div className='mxs_ml-a'>
-              {/*
-                            TODO: Support settings 
-                            <SettingsTab placeholderSlippage={allowedSlippagePercent} /> */}
-            </div>
-          </div>
-        </div>
-        <div className='add-liquidity-page__stepper mb-2'>
-          <Stepper
-            currencyA={baseCurrency ?? undefined}
-            currencyB={quoteCurrency ?? undefined}
-            mintInfo={mintInfo}
-            stepLinks={stepLinks}
-            completedSteps={completedSteps}
-            end={end}
-            handleNavigation={(step) => {
-              if (step.isEnabled) {
-                handleStepChange(step.link);
-                setTimeout(
-                  () => dispatch(updateCurrentStep({ currentStep: step.step })),
-                  10,
-                );
-              }
-            }}
-            priceFormat={priceFormat}
-          />
-        </div>
-        <Switch>
-          <RouterGuard
-            path={`/add/${currencyIdA}/${currencyIdB}/aftermath`}
-            redirect={`/add/${currencyIdA}/${currencyIdB}/select-pair`}
-            allowance={stepPair && stepRange && stepAmounts}
-            Component={Aftermath}
-            rejected={isRejected}
-            Button={() => (
-              <div className={'ml-a mr-a mt-1'}>
-                <AddLiquidityButton
-                  baseCurrency={baseCurrency ?? undefined}
-                  quoteCurrency={quoteCurrency ?? undefined}
-                  mintInfo={mintInfo}
-                  handleAddLiquidity={() => {
-                    setEnd(true);
-                    handleStepChange('aftermath');
-                  }}
-                  title={`Retry`}
-                  setRejected={setRejected}
-                />
-              </div>
-            )}
-          />
+    <Box>
+      <Box className='flex justify-between items-center'>
+        <StyledLabel fontSize='16px'>{t('supplyLiquidity')}</StyledLabel>
+        <Box className='flex items-center'>
+          <Box className='headingItem'>
+            <Box
+              className='flex flex-end'
+              style={{ width: 'fit-content', minWidth: 'fit-content' }}
+            >
+              <LinkButton
+                style={{ marginRight: 10, alignSelf: 'center' }}
+                fontSize='14px'
+              >
+                {' '}
+                {t('Clear All')}
+              </LinkButton>
 
-          <RouterGuard
-            path={`/add/${currencyIdA}/${currencyIdB}/enter-amounts`}
-            redirect={`/add/${currencyIdA}/${currencyIdB}/select-pair`}
-            allowance={
-              stepPair &&
-              stepRange &&
-              currentStep === (stepInitialPrice ? 3 : 2)
-            }
-            Component={EnterAmounts}
-            currencyA={baseCurrency ?? undefined}
-            currencyB={currencyB ?? undefined}
-            mintInfo={mintInfo}
-            isCompleted={stepAmounts}
-            additionalStep={stepInitialPrice}
-            priceFormat={priceFormat}
-            backStep={stepInitialPrice ? 2 : 1}
-          />
-
-          <RouterGuard
-            path={`/add/${currencyIdA}/${currencyIdB}/select-range`}
-            redirect={`/add/${currencyIdA}/${currencyIdB}/select-pair`}
-            allowance={stepPair && currentStep === (stepInitialPrice ? 2 : 1)}
-            Component={SelectRange}
-            currencyA={baseCurrency}
-            currencyB={quoteCurrency}
-            mintInfo={mintInfo}
-            disabled={!stepPair}
-            isCompleted={stepRange}
-            additionalStep={stepInitialPrice}
-            priceFormat={priceFormat}
-            backStep={stepInitialPrice ? 1 : 0}
-          />
-
-          <RouterGuard
-            path={`/add/${currencyIdA}/${currencyIdB}/initial-price`}
-            redirect={`/add/${currencyIdA}/${currencyIdB}/select-pair`}
-            allowance={mintInfo.noLiquidity}
-            Component={InitialPrice}
-            currencyA={baseCurrency ?? undefined}
-            currencyB={currencyB ?? undefined}
-            mintInfo={mintInfo}
-            isCompleted={stepInitialPrice}
-            priceFormat={priceFormat}
-            backStep={0}
-          />
-
-          <RouterGuard
-            path={``}
-            redirect={`/add/${currencyIdA}/${currencyIdB}/select-pair`}
-            allowance={true}
-            Component={SelectPair}
-            baseCurrency={baseCurrency}
-            quoteCurrency={quoteCurrency}
-            mintInfo={mintInfo}
-            isCompleted={stepPair}
-            handleCurrencySwap={handleCurrencySwap}
-            handleCurrencyASelect={handleCurrencyASelect}
-            handleCurrencyBSelect={handleCurrencyBSelect}
-            handlePopularPairSelection={handlePopularPairSelection}
-            priceFormat={priceFormat}
-          />
-        </Switch>
-        {!end && account ? (
-          <div className='add-buttons f f-ac f-jc mt-2'>
-            {currentStep !== 0 && (
-              <div>
-                <button
-                  className='add-buttons__prev f'
-                  onClick={() => {
-                    dispatch(
-                      updateCurrentStep({ currentStep: currentStep - 1 }),
-                    );
-                    handleStepChange(stepLinks[currentStep - 1].link);
-                  }}
-                >
-                  <ChevronLeft size={18} style={{ marginRight: '5px' }} />
-                  <span className='add-buttons__prev-text'>
-                    {stepLinks[currentStep - 1].title}
-                  </span>
-                  <span className='add-buttons__prev-text--mobile'>Back</span>
-                </button>
-              </div>
-            )}
-            {currentStep === (stepInitialPrice ? 3 : 2) ? (
-              <AddLiquidityButton
-                baseCurrency={baseCurrency ?? undefined}
-                quoteCurrency={quoteCurrency ?? undefined}
-                mintInfo={mintInfo}
-                handleAddLiquidity={() => {
-                  setEnd(true);
-                  handleStepChange('aftermath');
+              <RateToggle
+                currencyA={{ symbol: 'MATIC' }}
+                currencyB={{ symbol: 'USDT' }}
+                handleRateToggle={() => {
+                  // todo: handle toggle actions
                 }}
-                title={`Add liquidity`}
+              />
+            </Box>
+          </Box>
+          <Box className='headingItem'>
+            <SettingsIcon />
+          </Box>
+        </Box>
+      </Box>
+      <Box className='flex justify-between items-center' mt={2.5}>
+        {t('Select Pair')}
+      </Box>
+      <Box mt={2.5}>
+        {/* {showConfirm && (
+        <TransactionConfirmationModal
+          isOpen={showConfirm}
+          onDismiss={handleDismissConfirmation}
+          attemptingTxn={attemptingTxn}
+          txPending={txPending}
+          hash={txHash}
+          content={() =>
+            addLiquidityErrorMessage ? (
+              <TransactionErrorContent
+                onDismiss={handleDismissConfirmation}
+                message={addLiquidityErrorMessage}
               />
             ) : (
-              <button
-                className='add-buttons__next f f-jc f-ac ml-a'
-                disabled={!steps[currentStep]}
-                onClick={() => {
-                  dispatch(updateCurrentStep({ currentStep: currentStep + 1 }));
-                  isMobileOnly && window.scrollTo(0, 0);
-                  handleStepChange(stepLinks[currentStep + 1].link);
-                }}
-              >
-                <span>{stepLinks[currentStep + 1].title}</span>
-                <ChevronRight size={18} style={{ marginLeft: '5px' }} />
-              </button>
-            )}
-          </div>
-        ) : !account ? (
-          <div className='add-buttons f f-ac f-jc mt-2 mxs_mt-1'>
-            <button
-              className='add-buttons__next f f-jc f-ac ml-a'
-              onClick={toggleWalletModal}
-            >
-              Connect Wallet
-            </button>
-          </div>
-        ) : null}
-      </div>
-    </>
+              <ConfirmationModalContentV3
+                title={t('Supply Liquidity')}
+                onDismiss={handleDismissConfirmation}
+                content={modalHeaderV3}
+              />
+            )
+          }
+          pendingText={pendingText}
+          modalContent={
+            txPending ? t('submittedTxLiquidity') : t('successAddedliquidity')
+          }
+        />
+      )} */}
+        <SelectPair
+          baseCurrency={baseCurrency}
+          quoteCurrency={quoteCurrency}
+          mintInfo={mintInfo}
+          isCompleted={stepPair}
+          handleCurrencySwap={handleCurrencySwap}
+          handleCurrencyASelect={handleCurrencyASelect}
+          handleCurrencyBSelect={handleCurrencyBSelect}
+          handlePopularPairSelection={handlePopularPairSelection}
+          priceFormat={priceFormat}
+        />
+        <Box className='flex justify-between items-center' mt={2.5}>
+          Select range
+        </Box>
+
+        <SelectRange
+          currencyA={baseCurrency}
+          currencyB={quoteCurrency}
+          mintInfo={mintInfo}
+          disabled={!stepPair}
+          isCompleted={stepRange}
+          additionalStep={stepInitialPrice}
+          priceFormat={PriceFormats.TOKEN} // todo add selected format
+          backStep={stepInitialPrice ? 1 : 0}
+        />
+
+        <Box className='flex justify-between items-center' mt={2.5} mb={2.5}>
+          Deposit Amounts
+        </Box>
+
+        <EnterAmounts
+          currencyA={baseCurrency ?? undefined}
+          currencyB={quoteCurrency ?? undefined}
+          mintInfo={mintInfo}
+          priceFormat={priceFormat}
+        />
+
+        <Box mt={2.5}>
+          <AddLiquidityButton
+            title={buttonText}
+            baseCurrency={baseCurrency ?? undefined}
+            quoteCurrency={quoteCurrency ?? undefined}
+            mintInfo={mintInfo}
+            setRejected={setRejected}
+            handleAddLiquidity={() => {
+              console.log('liq a');
+            }}
+          />
+        </Box>
+
+        {/* <Box className='flex-wrap' mt={2.5}>
+        {(approvalA === ApprovalState.NOT_APPROVED ||
+          approvalA === ApprovalState.PENDING ||
+          approvalB === ApprovalState.NOT_APPROVED ||
+          approvalB === ApprovalState.PENDING) &&
+          !mintInfo?.errorMessage && (
+            <Box className='flex fullWidth justify-between' mb={2}>
+              {approvalA !== ApprovalState.APPROVED && (
+                <Box
+                  width={
+                    approvalB !== ApprovalState.APPROVED ? '48%' : '100%'
+                  }
+                >
+                  <StyledButton
+                    onClick={async () => {
+                      setApprovingA(true);
+                      try {
+                        await approveACallback();
+                        setApprovingA(false);
+                      } catch (e) {
+                        setApprovingA(false);
+                      }
+                    }}
+                    disabled={
+                      approvingA || approvalA === ApprovalState.PENDING
+                    }
+                  >
+                    {approvalA === ApprovalState.PENDING
+                      ? `${t('approving')} ${
+                          mintInfo?.currencies?.[Field.CURRENCY_A]?.symbol
+                        }`
+                      : `${t('approve')} ${
+                          mintInfo?.currencies?.[Field.CURRENCY_A]?.symbol
+                        }`}
+                  </StyledButton>
+                </Box>
+              )}
+              {approvalB !== ApprovalState.APPROVED && (
+                <Box
+                  width={
+                    approvalA !== ApprovalState.APPROVED ? '48%' : '100%'
+                  }
+                >
+                  <StyledButton
+                    fullWidth
+                    onClick={async () => {
+                      setApprovingB(true);
+                      try {
+                        await approveBCallback();
+                        setApprovingB(false);
+                      } catch (e) {
+                        setApprovingB(false);
+                      }
+                    }}
+                    disabled={
+                      approvingB || approvalB === ApprovalState.PENDING
+                    }
+                  >
+                    {approvalB === ApprovalState.PENDING
+                      ? `${t('approving')} ${
+                          mintInfo?.currencies?.[Field.CURRENCY_B]?.symbol
+                        }`
+                      : `${t('approve')} ${
+                          mintInfo?.currencies?.[Field.CURRENCY_B]?.symbol
+                        }`}
+                  </StyledButton>
+                </Box>
+              )}
+            </Box>
+          )}
+
+        <StyledButton
+          disabled={
+            Boolean(account) &&
+            (Boolean(mintInfo?.errorMessage) ||
+              approvalA !== ApprovalState.APPROVED ||
+              approvalB !== ApprovalState.APPROVED)
+          }
+          onClick={account ? onAdd : connectWallet}
+        >
+          {' '}
+          {buttonText}
+        </StyledButton>
+      </Box> */}
+      </Box>
+    </Box>
   );
 }

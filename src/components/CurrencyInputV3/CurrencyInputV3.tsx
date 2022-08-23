@@ -1,31 +1,30 @@
-import React, { useCallback, useState } from 'react';
-import { Currency } from '@uniswap/sdk';
-import {
-  Currency as CurrencyV3,
-  CurrencyAmount,
-  Token,
-} from '@uniswap/sdk-core';
+import React, { useMemo } from 'react';
+import { Currency, CurrencyAmount, Token } from '@uniswap/sdk-core';
 import { Box } from '@material-ui/core';
-import { CurrencySearchModal, NumericalInput } from 'components';
+import { NumericalInput } from 'components';
 import { useActiveWeb3React } from 'hooks';
 import 'components/styles/CurrencyInput.scss';
 import { useTranslation } from 'react-i18next';
-import CurrencySelect from 'components/CurrencySelect';
+import { TokenCard } from 'components/v3/NewAddLiquidity/components/TokenCard';
+import { useCurrencyBalance } from 'state/wallet/hooks';
+import useUSDCPrice from 'hooks/v3/useUSDCPrice';
+import Loader from 'components/Loader';
+import { PriceFormats } from 'components/v3/NewAddLiquidity/components/PriceFomatToggler';
 
 interface CurrencyInputProps {
-  title?: string;
   handleCurrencySelect: (currency: Currency) => void;
   currency: Currency | undefined;
   otherCurrency?: Currency | undefined;
   amount: string;
-  usdValue?: CurrencyAmount<Token> | null;
-  balance?: CurrencyAmount<CurrencyV3>;
+  fiatValue: CurrencyAmount<Token> | null;
   setAmount: (value: string) => void;
   onMax?: () => void;
   onHalf?: () => void;
   showHalfButton?: boolean;
   showMaxButton?: boolean;
   showPrice?: boolean;
+  priceFormat: PriceFormats;
+  isBase: boolean;
   bgClass?: string;
   id?: string;
 }
@@ -35,25 +34,69 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
   currency,
   otherCurrency,
   amount,
-  usdValue,
-  balance,
+  fiatValue,
   setAmount,
   onMax,
   onHalf,
   showMaxButton,
   showHalfButton,
-  title,
   showPrice,
+  priceFormat,
+  isBase,
   bgClass,
   id,
 }) => {
   const { t } = useTranslation();
-  const [modalOpen, setModalOpen] = useState(false);
+
   const { account } = useActiveWeb3React();
 
-  const handleOpenModal = useCallback(() => {
-    setModalOpen(true);
-  }, [setModalOpen]);
+  const balance = useCurrencyBalance(
+    account ?? undefined,
+    currency ?? undefined,
+  );
+  const balanceUSD = useUSDCPrice(currency ?? undefined);
+
+  const isUSD = useMemo(() => {
+    return priceFormat === PriceFormats.USD;
+  }, [priceFormat]);
+
+  const balanceString = useMemo(() => {
+    if (!balance || !currency) return <Loader stroke={'white'} />;
+
+    const _balance =
+      isUSD && balanceUSD
+        ? String(
+            parseFloat(
+              String(
+                (
+                  +balance.toSignificant(5) * +balanceUSD.toSignificant(5)
+                ).toFixed(5),
+              ),
+            ),
+          )
+        : String(
+            parseFloat(String(Number(balance.toSignificant(5)).toFixed(5))),
+          );
+
+    if (_balance.split('.')[0].length > 10) {
+      return `${isUSD ? '$ ' : ''}${_balance.slice(0, 7)}...${
+        isUSD ? '' : ` ${currency.symbol}`
+      }`;
+    }
+
+    if (+balance.toFixed() === 0) {
+      return `${isUSD ? '$ ' : ''}0${isUSD ? '' : ` ${currency.symbol}`}`;
+    }
+    if (+balance.toFixed() < 0.0001) {
+      return `< ${isUSD ? '$ ' : ''}0.0001${
+        isUSD ? '' : ` ${currency.symbol}`
+      }`;
+    }
+
+    return `${isUSD ? '$ ' : ''}${_balance}${
+      isUSD ? '' : ` ${currency.symbol}`
+    }`;
+  }, [balance, isUSD, fiatValue, currency]);
 
   return (
     <Box
@@ -61,27 +104,12 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
       className={`swapBox${showPrice ? ' priceShowBox' : ''} ${bgClass ??
         'bg-secondary2'}`}
     >
-      <Box className='flex justify-between' mb={2}>
-        <p>{title || `${t('youPay')}:`}</p>
-        <Box display='flex'>
-          {account && currency && showHalfButton && (
-            <Box className='maxWrapper' onClick={onHalf}>
-              <small>50%</small>
-            </Box>
-          )}
-          {account && currency && showMaxButton && (
-            <Box className='maxWrapper' marginLeft='20px' onClick={onMax}>
-              <small>{t('max')}</small>
-            </Box>
-          )}
-        </Box>
-      </Box>
       <Box mb={2}>
-        <CurrencySelect
-          id={id}
-          currency={currency}
-          otherCurrency={otherCurrency}
-          handleCurrencySelect={handleCurrencySelect}
+        <TokenCard
+          currency={currency ?? undefined}
+          otherCurrency={otherCurrency ?? undefined}
+          handleTokenSelection={handleCurrencySelect}
+          hideIcon={true}
         />
         <Box className='inputWrapper'>
           <NumericalInput
@@ -95,25 +123,25 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
         </Box>
       </Box>
       <Box className='flex justify-between'>
-        <small className='text-secondary'>
-          {t('balance')}: {balance?.toSignificant(5)}
-        </small>
-        <small className='text-secondary'>
-          ${usdValue?.toSignificant()?.toLocaleString()}
-        </small>
+        <Box display='flex'>
+          <small className='text-secondary'>
+            {t('balance')}: {balance?.toSignificant(5)}
+          </small>
+
+          {account && currency && showHalfButton && (
+            <Box className='maxWrapper' onClick={onHalf}>
+              <small>50%</small>
+            </Box>
+          )}
+          {account && currency && showMaxButton && (
+            <Box className='maxWrapper' marginLeft='20px' onClick={onMax}>
+              <small>{t('max')}</small>
+            </Box>
+          )}
+        </Box>
+
+        <small className='text-secondary'>${balanceString}</small>
       </Box>
-      {modalOpen && (
-        <CurrencySearchModal
-          isOpen={modalOpen}
-          onDismiss={() => {
-            setModalOpen(false);
-          }}
-          onCurrencySelect={handleCurrencySelect}
-          selectedCurrency={currency}
-          showCommonBases={true}
-          otherSelectedCurrency={otherCurrency}
-        />
-      )}
     </Box>
   );
 };

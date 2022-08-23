@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Currency, CurrencyAmount } from '@uniswap/sdk-core';
 import './index.scss';
 import { Field } from 'state/mint/actions';
@@ -17,19 +17,19 @@ import { useUSDCValue } from 'hooks/v3/useUSDCPrice';
 import { NONFUNGIBLE_POSITION_MANAGER_ADDRESSES } from 'constants/v3/addresses';
 import { maxAmountSpend } from 'utils/v3/maxAmountSpend';
 import { tryParseAmount } from 'state/swap/v3/hooks';
-import { TokenAmountCard } from '../../components/TokenAmountCard';
-import { StepTitle } from '../../components/StepTitle';
 import { PriceFormats } from '../../components/PriceFomatToggler';
-import { TokenRatio } from '../../components/TokenRatio';
+import { Box } from '@material-ui/core';
+import CurrencyInputV3 from 'components/CurrencyInputV3';
+import { useTranslation } from 'react-i18next';
 
 interface IEnterAmounts {
   currencyA: Currency | undefined;
   currencyB: Currency | undefined;
   mintInfo: IDerivedMintInfo;
-  isCompleted: boolean;
-  additionalStep: boolean;
+  isCompleted?: boolean;
+  additionalStep?: boolean;
   priceFormat: PriceFormats;
-  backStep: number;
+  backStep?: number;
 }
 
 export function EnterAmounts({
@@ -71,11 +71,13 @@ export function EnterAmounts({
     mintInfo.pool,
   );
 
+  const { t } = useTranslation();
   // get formatted amounts
   const formattedAmounts = {
     [independentField]: typedValue,
     [mintInfo.dependentField]:
-      mintInfo.parsedAmounts[mintInfo.dependentField]?.toSignificant(6) ?? '',
+      mintInfo?.parsedAmounts?.[mintInfo?.dependentField]?.toSignificant(6) ??
+      '',
   };
 
   const usdcValues = {
@@ -141,8 +143,8 @@ export function EnterAmounts({
   const [token0Ratio, token1Ratio] = useMemo(() => {
     const currentPrice = mintInfo.price?.toSignificant(5);
 
-    const left = mintInfo.lowerPrice.toSignificant(5);
-    const right = mintInfo.upperPrice.toSignificant(5);
+    const left = mintInfo?.lowerPrice?.toSignificant(5);
+    const right = mintInfo?.upperPrice?.toSignificant(5);
 
     //TODO
     if (
@@ -219,109 +221,85 @@ export function EnterAmounts({
   const history = useHistory();
   const dispatch = useAppDispatch();
 
-  useEffect(() => {
-    return () => {
-      if (history.action === 'POP') {
-        dispatch(updateCurrentStep({ currentStep: backStep }));
-      }
-    };
-  });
+  // useEffect(() => {
+  //   return () => {
+  //     if (history.action === 'POP') {
+  //       dispatch(updateCurrentStep({ currentStep: backStep }));
+  //     }
+  //   };
+  // });
 
-  const leftPrice = useMemo(() => {
-    return mintInfo.invertPrice
-      ? mintInfo.upperPrice.invert()
-      : mintInfo.lowerPrice;
-  }, [mintInfo]);
+  // const leftPrice = useMemo(() => {
+  //   return mintInfo.invertPrice
+  //     ? mintInfo.upperPrice?.invert()
+  //     : mintInfo.lowerPrice;
+  // }, [mintInfo]);
 
-  const rightPrice = useMemo(() => {
-    return mintInfo.invertPrice
-      ? mintInfo.lowerPrice.invert()
-      : mintInfo.upperPrice;
-  }, [mintInfo]);
+  // const rightPrice = useMemo(() => {
+  //   return mintInfo.invertPrice
+  //     ? mintInfo.lowerPrice?.invert()
+  //     : mintInfo.upperPrice;
+  // }, [mintInfo]);
 
   return (
-    <div className='f c'>
-      <StepTitle
-        title={`Enter amounts`}
-        isCompleted={isCompleted}
-        step={additionalStep ? 4 : 3}
-      />
-      {mintInfo.invalidRange && (
-        <div className='range__notification error w-100'>Invalid range</div>
-      )}
-      <div className='f mxs_fd-cr ms_fd-cr mm_fd-cr'>
-        <div className='f c mxs_w-100'>
-          <div className='mb-1' style={{ borderRadius: '8px' }}>
-            <TokenAmountCard
-              currency={currencyA}
-              otherCurrency={currencyB}
-              value={formattedAmounts[Field.CURRENCY_A]}
-              fiatValue={usdcValues[Field.CURRENCY_A]}
-              handleInput={onFieldAInput}
-              handleMax={() =>
-                onFieldAInput(maxAmounts[Field.CURRENCY_A]?.toExact() ?? '')
-              }
-              showApproval={showApprovalA}
-              isApproving={approvalA === ApprovalState.PENDING}
-              handleApprove={approveACallback}
-              disabled={true}
-              locked={mintInfo.depositADisabled}
-              isMax={!!atMaxAmounts[Field.CURRENCY_A]}
-              error={currencyAError}
-              priceFormat={priceFormat}
-              isBase={false}
-            />
-          </div>
-          <div>
-            <TokenAmountCard
-              currency={currencyB}
-              otherCurrency={currencyA}
-              value={formattedAmounts[Field.CURRENCY_B]}
-              fiatValue={usdcValues[Field.CURRENCY_B]}
-              handleInput={onFieldBInput}
-              handleMax={() =>
-                onFieldBInput(maxAmounts[Field.CURRENCY_B]?.toExact() ?? '')
-              }
-              showApproval={showApprovalB}
-              isApproving={approvalB === ApprovalState.PENDING}
-              handleApprove={approveBCallback}
-              disabled={false}
-              locked={mintInfo.depositBDisabled}
-              isMax={!!atMaxAmounts[Field.CURRENCY_B]}
-              error={currencyBError}
-              priceFormat={priceFormat}
-              isBase={true}
-            />
-          </div>
-        </div>
-        <div className='full-h ml-2 mxs_ml-0 mxs_mb-2 ms_ml-0 mm_ml-0 mm_mb-1'>
-          <TokenRatio
-            currencyA={currencyA}
-            currencyB={currencyB}
-            token0Ratio={token0Ratio}
-            token1Ratio={token1Ratio}
-            decrementLeft={
-              mintInfo.invertPrice ? getIncrementUpper : getDecrementLower
-            }
-            decrementRight={
-              mintInfo.invertPrice ? getIncrementLower : getDecrementUpper
-            }
-            incrementLeft={
-              mintInfo.invertPrice ? getDecrementUpper : getIncrementLower
-            }
-            incrementRight={
-              mintInfo.invertPrice ? getDecrementLower : getIncrementUpper
-            }
-            incrementDisabled={mintInfo.ticksAtLimit[Bound.UPPER]}
-            decrementDisabled={mintInfo.ticksAtLimit[Bound.UPPER]}
-            onUserLeftInput={onLeftRangeInput}
-            onUserRightInput={onRightRangeInput}
-            lowerPrice={leftPrice?.toSignificant(5)}
-            upperPrice={rightPrice?.toSignificant(5)}
-            disabled={false}
-          />
-        </div>
-      </div>
-    </div>
+    <Box className='flex flex-col mt-2'>
+      <Box mb={2}>
+        <CurrencyInputV3
+          id='add-liquidity-input-tokena'
+          currency={mintInfo?.currencies?.[Field.CURRENCY_A]}
+          showHalfButton={Boolean(maxAmounts?.[Field.CURRENCY_A])}
+          showMaxButton={!atMaxAmounts?.[Field.CURRENCY_A]}
+          onMax={() =>
+            onFieldAInput(maxAmounts?.[Field.CURRENCY_A]?.toExact() ?? '')
+          }
+          onHalf={() =>
+            onFieldAInput(
+              maxAmounts?.[Field.CURRENCY_A]
+                ? (
+                    Number(maxAmounts?.[Field.CURRENCY_A]?.toExact()) / 2
+                  ).toString()
+                : '',
+            )
+          }
+          handleCurrencySelect={(currency: any) => {
+            console.log('selected ', currency);
+          }}
+          amount={formattedAmounts?.[Field.CURRENCY_A]}
+          fiatValue={usdcValues[Field.CURRENCY_A]}
+          setAmount={onFieldAInput}
+          priceFormat={priceFormat}
+          isBase={false}
+        />
+      </Box>
+
+      <Box>
+        <CurrencyInputV3
+          id='add-liquidity-input-tokenb'
+          showHalfButton={Boolean(maxAmounts[Field.CURRENCY_B])}
+          currency={mintInfo?.currencies?.[Field.CURRENCY_B]}
+          showMaxButton={!atMaxAmounts[Field.CURRENCY_B]}
+          onHalf={() =>
+            onFieldBInput(
+              maxAmounts[Field.CURRENCY_B]
+                ? (
+                    Number(maxAmounts[Field.CURRENCY_B]?.toExact()) / 2
+                  ).toString()
+                : '',
+            )
+          }
+          onMax={() =>
+            onFieldBInput(maxAmounts[Field.CURRENCY_B]?.toExact() ?? '')
+          }
+          handleCurrencySelect={(currency: any) => {
+            console.log('selected', currency);
+          }}
+          amount={formattedAmounts[Field.CURRENCY_B]}
+          fiatValue={usdcValues[Field.CURRENCY_B]}
+          setAmount={onFieldBInput}
+          priceFormat={priceFormat}
+          isBase={true}
+        />
+      </Box>
+    </Box>
   );
 }

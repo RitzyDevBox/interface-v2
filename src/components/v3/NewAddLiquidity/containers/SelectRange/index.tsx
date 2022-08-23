@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { IPresetArgs, PresetRanges } from '../../components/PresetRanges';
 import { RangeSelector } from '../../components/RangeSelector';
 import { Currency } from '@uniswap/sdk-core';
@@ -27,6 +27,12 @@ import { Helmet } from 'react-helmet';
 import LiquidityChartRangeInput from 'components/AddLiquidityV3/components/LiquidityChartRangeInput';
 import { GlobalValue } from 'constants/index';
 import { toToken } from 'constants/v3/routing';
+import { Box } from '@material-ui/core';
+import { fetchPoolsAPR } from 'utils/aprApi';
+import { PoolState } from 'hooks/usePools';
+import Loader from 'components/Loader';
+import { computePoolAddress } from 'hooks/v3/computePoolAddress';
+import { POOL_DEPLOYER_ADDRESS } from 'constants/v3/addresses';
 
 interface IRangeSelector {
   currencyA: Currency | null | undefined;
@@ -150,6 +156,7 @@ export function SelectRange({
 
   const handlePresetRangeSelection = useCallback(
     (preset: IPresetArgs | null) => {
+      console.log('handleing present range selection ', { preset, price });
       if (!price) return;
 
       dispatch(updateSelectedPreset({ preset: preset ? preset.type : null }));
@@ -164,99 +171,120 @@ export function SelectRange({
     [price],
   );
 
+  const [aprs, setAprs] = useState<undefined | { [key: string]: number }>();
+
   useEffect(() => {
-    return () => {
-      if (history.action === 'POP') {
-        dispatch(updateCurrentStep({ currentStep: backStep }));
-      }
-    };
+    fetchPoolsAPR().then(setAprs);
   }, []);
 
+  const feeString = useMemo(() => {
+    if (
+      mintInfo.poolState === PoolState.INVALID ||
+      mintInfo.poolState === PoolState.LOADING
+    )
+      return '';
+
+    if (mintInfo.noLiquidity) return `0.01% fee`;
+
+    return `${(mintInfo.dynamicFee / 10000).toFixed(3)}% fee`;
+  }, [mintInfo]);
+
+  const aprString = useMemo(() => {
+    if (!aprs || !currencyA || !currencyB) return '';
+
+    const poolAddress = computePoolAddress({
+      poolDeployer: POOL_DEPLOYER_ADDRESS[137],
+      tokenA: currencyA.wrapped,
+      tokenB: currencyB.wrapped,
+    }).toLowerCase();
+
+    return aprs[poolAddress]
+      ? `${aprs[poolAddress].toFixed(2)}% APR`
+      : undefined;
+  }, [currencyA, currencyB, aprs]);
+
   return (
-    <div className='f c'>
-      <StepTitle
-        title={`Select a range`}
-        isCompleted={isCompleted}
-        step={additionalStep ? 3 : 2}
+    <Box>
+      <PresetRanges
+        isInvalid={mintInfo.invalidRange}
+        outOfRange={mintInfo.outOfRange}
+        isStablecoinPair={isStablecoinPair}
+        activePreset={activePreset}
+        handlePresetRangeSelection={handlePresetRangeSelection}
+        priceLower={leftPrice?.toSignificant(5)}
+        priceUpper={rightPrice?.toSignificant(5)}
+        price={price}
+        fee={feeString}
+        apr={aprString}
       />
-      <div className='f mxs_fd-cr ms_fd-cr'>
-        <div className='f c'>
-          <div className='mb-1'>
-            <RangeSelector
-              priceLower={priceLower}
-              priceUpper={priceUpper}
-              getDecrementLower={getDecrementLower}
-              getIncrementLower={getIncrementLower}
-              getDecrementUpper={getDecrementUpper}
-              getIncrementUpper={getIncrementUpper}
-              onLeftRangeInput={onLeftRangeInput}
-              onRightRangeInput={onRightRangeInput}
-              currencyA={currencyA}
-              currencyB={currencyB}
-              mintInfo={mintInfo}
-              initial={!!mintInfo.noLiquidity}
-              disabled={!startPriceTypedValue && !mintInfo.price}
-              isBeforePrice={isBeforePrice}
-              isAfterPrice={isAfterPrice}
-              priceFormat={priceFormat}
-            />
-          </div>
-          <div className='range__chart'>
-            <LiquidityChartRangeInput
-              currencyA={currencyA ?? undefined}
-              currencyB={currencyB ?? undefined}
-              feeAmount={mintInfo.dynamicFee}
-              ticksAtLimit={mintInfo.ticksAtLimit}
-              price={
-                priceFormat === PriceFormats.USD
-                  ? currentPriceInUSD
-                    ? parseFloat(currentPriceInUSD.toSignificant(5))
-                    : undefined
-                  : price
-                  ? parseFloat(price)
-                  : undefined
-              }
-              priceLower={priceLower}
-              priceUpper={priceUpper}
-              onLeftRangeInput={onLeftRangeInput}
-              onRightRangeInput={onRightRangeInput}
-              interactive={false}
-              priceFormat={priceFormat}
-            />
-            {mintInfo.outOfRange && (
-              <div className='range__notification out-of-range'>
-                Out of range
-              </div>
-            )}
-            {mintInfo.invalidRange && (
-              <div className='range__notification error w-100'>
-                Invalid range
-              </div>
-            )}
-          </div>
-        </div>
-        <div className='ml-2 mxs_ml-0 ms_ml-0'>
-          {currencyA && currencyB && (
-            <USDPrices
-              currencyA={currencyA}
-              currencyB={currencyB}
-              currencyAUSDC={currencyAUSDC}
-              currencyBUSDC={currencyBUSDC}
-              priceFormat={priceFormat}
-            />
-          )}
-          <PresetRanges
-            isInvalid={mintInfo.invalidRange}
-            outOfRange={mintInfo.outOfRange}
-            isStablecoinPair={isStablecoinPair}
-            activePreset={activePreset}
-            handlePresetRangeSelection={handlePresetRangeSelection}
-            priceLower={leftPrice?.toSignificant(5)}
-            priceUpper={rightPrice?.toSignificant(5)}
-            price={price}
+
+      <Box>
+        {currencyA && currencyB && (
+          <USDPrices
+            currencyA={currencyA}
+            currencyB={currencyB}
+            currencyAUSDC={currencyAUSDC}
+            currencyBUSDC={currencyBUSDC}
+            priceFormat={priceFormat}
           />
+        )}
+      </Box>
+
+      <RangeSelector
+        priceLower={priceLower}
+        priceUpper={priceUpper}
+        getDecrementLower={getDecrementLower}
+        getIncrementLower={getIncrementLower}
+        getDecrementUpper={getDecrementUpper}
+        getIncrementUpper={getIncrementUpper}
+        onLeftRangeInput={onLeftRangeInput}
+        onRightRangeInput={onRightRangeInput}
+        currencyA={currencyA}
+        currencyB={currencyB}
+        mintInfo={mintInfo}
+        initial={!!mintInfo.noLiquidity}
+        disabled={!startPriceTypedValue && !mintInfo.price}
+        isBeforePrice={isBeforePrice}
+        isAfterPrice={isAfterPrice}
+        priceFormat={priceFormat}
+      />
+
+      {!currencyA || !currencyB ? (
+        <div>...</div>
+      ) : (
+        <LiquidityChartRangeInput
+          currencyA={currencyA ?? undefined}
+          currencyB={currencyB ?? undefined}
+          feeAmount={mintInfo.dynamicFee}
+          ticksAtLimit={mintInfo.ticksAtLimit}
+          price={
+            priceFormat === PriceFormats.USD
+              ? currentPriceInUSD
+                ? parseFloat(currentPriceInUSD.toSignificant(5))
+                : undefined
+              : price
+              ? parseFloat(price)
+              : undefined
+          }
+          priceLower={priceLower}
+          priceUpper={priceUpper}
+          onLeftRangeInput={onLeftRangeInput}
+          onRightRangeInput={onRightRangeInput}
+          interactive={false}
+          priceFormat={priceFormat}
+        />
+      )}
+
+      {mintInfo.outOfRange && (
+        <div className='range__notification out-of-range'>
+          <div>Out of range</div>
         </div>
-      </div>
-    </div>
+      )}
+      {mintInfo.invalidRange && (
+        <div className='range__notification error w-100'>
+          <div>Invalid range</div>
+        </div>
+      )}
+    </Box>
   );
 }
