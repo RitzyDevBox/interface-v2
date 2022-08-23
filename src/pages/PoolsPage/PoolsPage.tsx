@@ -12,13 +12,13 @@ const YourLiquidityPools = lazy(() => import('./YourLiquidityPools'));
 const PoolsPage: React.FC = () => {
   const parsedQuery = useParsedQueryString();
   const poolVersion =
-    parsedQuery && parsedQuery.version ? (parsedQuery.version as string) : 'v3';
+    parsedQuery && parsedQuery.version ? (parsedQuery.version as string) : 'v2';
 
   const { t } = useTranslation();
   const history = useHistory();
   const handleToggleAction = useCallback(
     (isV3: boolean) => {
-      const url = isV3 ? '/v3Pools' : '/pools';
+      const url = isV3 ? '/v3Pools?version=v3' : '/pools?version=v2';
       history.push(url);
     },
     [history],
@@ -29,7 +29,10 @@ const PoolsPage: React.FC = () => {
       <Box className='pageHeading'>
         <Box className='flex row items-center'>
           <h4>{t('pool')}</h4>
-          <VersionToggle isV3={false} onToggleV3={handleToggleAction} />
+          <VersionToggle
+            isV3={poolVersion === 'v3'}
+            onToggleV3={handleToggleAction}
+          />
         </Box>
 
         <Box className='helpWrapper' style={{ alignSelf: 'flex-end' }}>
@@ -37,8 +40,9 @@ const PoolsPage: React.FC = () => {
           <HelpIcon />
         </Box>
       </Box>
+
       <Grid container spacing={4}>
-        <Grid item>
+        <Grid item xs={12} sm={12} md={5}>
           <Box className='wrapper'>
             <SupplyLiquidity />
           </Box>
@@ -49,6 +53,18 @@ const PoolsPage: React.FC = () => {
           </Box>
         </Grid>
       </Grid>
+      {/* <Grid container spacing={4}>
+        <Grid item>
+          <Box className='wrapper'>
+            <SupplyLiquidity />
+          </Box>
+        </Grid>
+        <Grid item xs={12} sm={12} md={7}>
+          <Box className='wrapper'>
+            <YourLiquidityPools />
+          </Box>
+        </Grid>
+      </Grid> */}
     </Box>
   );
 };

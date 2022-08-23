@@ -673,7 +673,6 @@ export default function PositionPage() {
                 </div>
                 <CurrentPriceCard
                   inverted={inverted}
-                  //@ts-ignore
                   pool={_pool}
                   currencyQuote={currencyQuote}
                   currencyBase={currencyBase}

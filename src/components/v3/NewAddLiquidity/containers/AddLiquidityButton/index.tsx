@@ -20,7 +20,13 @@ import { ZERO_PERCENT } from 'constants/v3/misc';
 import { useIsNetworkFailedImmediate } from 'hooks/v3/useIsNetworkFailed';
 import { JSBI } from '@uniswap/sdk';
 import { NONFUNGIBLE_POSITION_MANAGER_ADDRESSES } from 'constants/v3/addresses';
-import { calculateGasMarginV3 } from 'utils';
+import {
+  addMaticToMetamask,
+  calculateGasMarginV3,
+  isSupportedNetwork,
+} from 'utils';
+import { StyledButton } from 'components/v3/Common/styledElements';
+import { useWalletModalToggle } from 'state/application/hooks';
 
 interface IAddLiquidityButton {
   baseCurrency: Currency | undefined;
@@ -160,13 +166,28 @@ export function AddLiquidityButton({
     }
   }
 
+  const { ethereum } = window as any;
+  const toggleWalletModal = useWalletModalToggle();
+  const connectWallet = () => {
+    if (ethereum && !isSupportedNetwork(ethereum)) {
+      addMaticToMetamask();
+    } else {
+      toggleWalletModal();
+    }
+  };
+
   return (
-    <button
-      className='add-buttons__liquidity ml-a'
-      disabled={!isReady}
-      onClick={onAdd}
+    <StyledButton
+      disabled={
+        Boolean(account) &&
+        (Boolean(mintInfo?.errorMessage) ||
+          approvalA !== ApprovalState.APPROVED ||
+          approvalB !== ApprovalState.APPROVED)
+      }
+      onClick={account ? onAdd : connectWallet}
     >
+      {' '}
       {title}
-    </button>
+    </StyledButton>
   );
 }
