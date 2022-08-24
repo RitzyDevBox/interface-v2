@@ -60,6 +60,7 @@ import RateToggle from 'components/RateToggle';
 import { useTranslation } from 'react-i18next';
 import CurrencyInputV3 from 'components/CurrencyInputV3';
 import { isSupportedNetwork } from 'utils';
+import SettingsModal from 'components/SettingsModal';
 
 const DEFAULT_ADD_IN_RANGE_SLIPPAGE_TOLERANCE = new Percent(50, 10_000);
 
@@ -362,43 +363,43 @@ export function NewAddLiquidityPage() {
     }
   }, [hidePriceFormatter]);
 
-  useEffect(() => {
-    return () => {
-      resetState();
-      dispatch(updateCurrentStep({ currentStep: 0 }));
-    };
-  }, []);
+  // useEffect(() => {
+  //   return () => {
+  //     resetState();
+  //     dispatch(updateCurrentStep({ currentStep: 0 }));
+  //   };
+  // }, []);
 
-  useEffect(() => {
-    switch (currentStep) {
-      // case 0: {
-      //     history.push(`/add/${currencyIdA}/${currencyIdB}/select-pair`);
-      //     break;
-      // }
-      case 1: {
-        if (!mintInfo.noLiquidity) {
-          history.push(`/add/${currencyIdA}/${currencyIdB}/select-range`);
-        } else {
-          history.push(`/add/${currencyIdA}/${currencyIdB}/initial-price`);
-        }
-        break;
-      }
-      case 2: {
-        if (!mintInfo.noLiquidity) {
-          history.push(`/add/${currencyIdA}/${currencyIdB}/enter-amounts`);
-        } else {
-          history.push(`/add/${currencyIdA}/${currencyIdB}/select-range`);
-        }
-        break;
-      }
-      case 3: {
-        if (mintInfo.noLiquidity) {
-          history.push(`/add/${currencyIdA}/${currencyIdB}/enter-amounts`);
-        }
-        break;
-      }
-    }
-  }, [currencyIdA, currencyIdB, history, currentStep, mintInfo.noLiquidity]);
+  // useEffect(() => {
+  //   switch (currentStep) {
+  //     // case 0: {
+  //     //     history.push(`/add/${currencyIdA}/${currencyIdB}/select-pair`);
+  //     //     break;
+  //     // }
+  //     case 1: {
+  //       if (!mintInfo.noLiquidity) {
+  //         history.push(`/add/${currencyIdA}/${currencyIdB}/select-range`);
+  //       } else {
+  //         history.push(`/add/${currencyIdA}/${currencyIdB}/initial-price`);
+  //       }
+  //       break;
+  //     }
+  //     case 2: {
+  //       if (!mintInfo.noLiquidity) {
+  //         history.push(`/add/${currencyIdA}/${currencyIdB}/enter-amounts`);
+  //       } else {
+  //         history.push(`/add/${currencyIdA}/${currencyIdB}/select-range`);
+  //       }
+  //       break;
+  //     }
+  //     case 3: {
+  //       if (mintInfo.noLiquidity) {
+  //         history.push(`/add/${currencyIdA}/${currencyIdB}/enter-amounts`);
+  //       }
+  //       break;
+  //     }
+  //   }
+  // }, [currencyIdA, currencyIdB, history, currentStep, mintInfo.noLiquidity]);
 
   const { ethereum } = window as any;
   const buttonText = useMemo(() => {
@@ -410,9 +411,24 @@ export function NewAddLiquidityPage() {
     return t('connectWallet');
   }, [account, ethereum, mintInfo?.errorMessage, t]);
 
+  const [openSettingsModal, setOpenSettingsModal] = useState(false);
+
+  const handleSettingsModalOpen = useCallback(
+    (flag: boolean) => {
+      setOpenSettingsModal(flag);
+    },
+    [openSettingsModal, setOpenSettingsModal],
+  );
+
   return (
     <Box>
       <Box className='flex justify-between items-center'>
+        {openSettingsModal && (
+          <SettingsModal
+            open={openSettingsModal}
+            onClose={() => setOpenSettingsModal(false)}
+          />
+        )}
         <StyledLabel fontSize='16px'>{t('supplyLiquidity')}</StyledLabel>
         <Box className='flex items-center'>
           <Box className='headingItem'>
@@ -427,18 +443,14 @@ export function NewAddLiquidityPage() {
                 {' '}
                 {t('Clear All')}
               </LinkButton>
-
-              <RateToggle
-                currencyA={{ symbol: 'MATIC' }}
-                currencyB={{ symbol: 'USDT' }}
-                handleRateToggle={() => {
-                  // todo: handle toggle actions
-                }}
+              <PriceFormatToggler
+                currentFormat={priceFormat}
+                handlePriceFormat={handlePriceFormat}
               />
             </Box>
           </Box>
           <Box className='headingItem'>
-            <SettingsIcon />
+            <SettingsIcon onClick={() => handleSettingsModalOpen(true)} />
           </Box>
         </Box>
       </Box>
