@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Price, Token, Currency } from '@uniswap/sdk-core';
-import Input from 'components/NumericalInput';
 import { GlobalValue } from 'constants/index';
 import { toToken } from 'constants/v3/routing';
 import { useBestV3TradeExactIn } from 'hooks/v3/useBestV3Trade';
@@ -15,6 +14,12 @@ import {
 import { PriceFormats } from '../PriceFomatToggler';
 import { tryParseAmount } from 'state/swap/v3/hooks';
 import './index.scss';
+import { Box, IconButton } from '@material-ui/core';
+import { useTranslation } from 'react-i18next';
+import { StyledBox, StyledLabel } from 'components/v3/Common/styledElements';
+import { ReactComponent as AddIcon } from 'assets/images/AddIconBtn.svg';
+import { ReactComponent as RemoveIcon } from 'assets/images/RemoveIconBtn.svg';
+import NumericalInput from 'components/NumericalInput';
 
 interface IRangeSelector {
   priceLower: Price<Token, Token> | undefined;
@@ -105,6 +110,8 @@ export function RangeSelector({
   const initialUSDPrices = useInitialUSDPrices();
   const initialTokenPrice = useInitialTokenPrice();
 
+  const { t } = useTranslation();
+
   const isSorted = useMemo(() => {
     return tokenA && tokenB && tokenA.sortsBefore(tokenB);
   }, [tokenA, tokenB]);
@@ -169,11 +176,8 @@ export function RangeSelector({
   ]);
 
   return (
-    <div className='f f-jb mxs_fd-c'>
-      <div
-        className={`min-price mxs_mb-1`}
-        style={{ order: isAfterPrice ? 2 : 1 }}
-      >
+    <Box>
+      <Box className='flex justify-between items-center' mt={2.5} mb={2.5}>
         <RangePart
           value={
             mintInfo.ticksAtLimit[Bound.LOWER]
@@ -191,32 +195,10 @@ export function RangeSelector({
           tokenB={currencyB ?? undefined}
           initialPrice={mintInfo.price}
           disabled={disabled}
-          title={`Min price`}
+          title={t`Min price`}
           priceFormat={priceFormat}
         />
-      </div>
-      {mintInfo.price && (
-        <div
-          className='current-price f f-ac mxs_fd-c'
-          style={{ order: isAfterPrice ? 1 : isBeforePrice ? 3 : 2 }}
-        >
-          <div className='mb-05 mxs_mt-05' style={{ whiteSpace: 'nowrap' }}>
-            {initial
-              ? `Initial ${currencyA?.symbol} to ${
-                  isUSD ? 'USD' : currencyB?.symbol
-                } price`
-              : `Current ${currencyA?.symbol} to ${
-                  isUSD ? 'USD' : currencyB?.symbol
-                } price`}
-          </div>
-          <div className='current-price-tip ta-c'>{`${currentPrice ||
-            `Loading...`}`}</div>
-        </div>
-      )}
-      <div
-        className='max-price mxs_mt-1'
-        style={{ order: isBeforePrice ? 2 : 3 }}
-      >
+
         <RangePart
           value={
             mintInfo.ticksAtLimit[Bound.UPPER]
@@ -233,11 +215,80 @@ export function RangeSelector({
           tokenB={currencyB ?? undefined}
           initialPrice={mintInfo.price}
           disabled={disabled}
-          title={`Max price`}
+          title={t`Max price`}
           priceFormat={priceFormat}
         />
-      </div>
-    </div>
+      </Box>
+    </Box>
+    // <div className='f f-jb mxs_fd-c'>
+    //   <div
+    //     className={`min-price mxs_mb-1`}
+    //     style={{ order: isAfterPrice ? 2 : 1 }}
+    //   >
+    //     <RangePart
+    //       value={
+    //         mintInfo.ticksAtLimit[Bound.LOWER]
+    //           ? '0'
+    //           : leftPrice?.toSignificant(5) ?? ''
+    //       }
+    //       onUserInput={onLeftRangeInput}
+    //       width='100%'
+    //       decrement={isSorted ? getDecrementLower : getIncrementUpper}
+    //       increment={isSorted ? getIncrementLower : getDecrementUpper}
+    //       decrementDisabled={mintInfo.ticksAtLimit[Bound.LOWER]}
+    //       incrementDisabled={mintInfo.ticksAtLimit[Bound.LOWER]}
+    //       label={leftPrice ? `${currencyB?.symbol}` : '-'}
+    //       tokenA={currencyA ?? undefined}
+    //       tokenB={currencyB ?? undefined}
+    //       initialPrice={mintInfo.price}
+    //       disabled={disabled}
+    //       title={`Min price`}
+    //       priceFormat={priceFormat}
+    //     />
+    //   </div>
+    //   {mintInfo.price && (
+    //     <div
+    //       className='current-price f f-ac mxs_fd-c'
+    //       style={{ order: isAfterPrice ? 1 : isBeforePrice ? 3 : 2 }}
+    //     >
+    //       <div className='mb-05 mxs_mt-05' style={{ whiteSpace: 'nowrap' }}>
+    //         {initial
+    //           ? `Initial ${currencyA?.symbol} to ${
+    //               isUSD ? 'USD' : currencyB?.symbol
+    //             } price`
+    //           : `Current ${currencyA?.symbol} to ${
+    //               isUSD ? 'USD' : currencyB?.symbol
+    //             } price`}
+    //       </div>
+    //       <div className='current-price-tip ta-c'>{`${currentPrice ||
+    //         `Loading...`}`}</div>
+    //     </div>
+    //   )}
+    //   <div
+    //     className='max-price mxs_mt-1'
+    //     style={{ order: isBeforePrice ? 2 : 3 }}
+    //   >
+    //     <RangePart
+    //       value={
+    //         mintInfo.ticksAtLimit[Bound.UPPER]
+    //           ? '∞'
+    //           : rightPrice?.toSignificant(5) ?? ''
+    //       }
+    //       onUserInput={onRightRangeInput}
+    //       decrement={isSorted ? getDecrementUpper : getIncrementLower}
+    //       increment={isSorted ? getIncrementUpper : getDecrementLower}
+    //       incrementDisabled={mintInfo.ticksAtLimit[Bound.UPPER]}
+    //       decrementDisabled={mintInfo.ticksAtLimit[Bound.UPPER]}
+    //       label={rightPrice ? `${currencyB?.symbol}` : '-'}
+    //       tokenA={currencyA ?? undefined}
+    //       tokenB={currencyB ?? undefined}
+    //       initialPrice={mintInfo.price}
+    //       disabled={disabled}
+    //       title={`Max price`}
+    //       priceFormat={priceFormat}
+    //     />
+    //   </div>
+    // </div>
   );
 }
 
@@ -377,47 +428,57 @@ function RangePart({
   }, [usdPriceB, initialTokenPrice, initialUSDPrices, value]);
 
   return (
-    <div>
-      <div className='mb-05 f f-ac'>
-        <div>{title}</div>
-        <div className='ml-a'>
-          <button
-            onClick={handleDecrement}
-            disabled={decrementDisabled || disabled}
-            className='range-input__btn'
-          >
-            -
-          </button>
-          <button
-            onClick={handleIncrement}
-            disabled={incrementDisabled || disabled}
-            className='range-input__btn'
-          >
-            +
-          </button>
-        </div>
-      </div>
-      <div className='f pos-r f-ac'>
-        {isUSD && valueUSD && (
-          <label htmlFor={title} className='range-input__usd'>
-            $
-          </label>
-        )}
-        <Input
-          value={isUSD ? localUSDValue : localTokenValue}
+    <StyledBox
+      id={title}
+      width={200}
+      height={100}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-evenly',
+        alignItems: 'center',
+      }}
+    >
+      <StyledLabel fontSize='13px' color='#696c80'>
+        {title}
+      </StyledLabel>
+
+      <Box className='flex justify-center items-center'>
+        <IconButton
+          size='small'
+          className='cursor-pointer'
+          onClick={handleIncrement}
+          disabled={incrementDisabled || disabled}
+        >
+          <AddIcon />
+        </IconButton>
+
+        <NumericalInput
           id={title}
-          onBlur={handleOnBlur}
-          className={`range-input ${isUSD && valueUSD ? 'is-usd' : ''}`}
-          disabled={disabled || locked}
+          value={isUSD ? localUSDValue : localTokenValue}
+          align='center'
+          placeholder='0.00'
           onUserInput={(val) => {
             isUSD
               ? setLocalUSDValue(val.trim())
               : setLocalTokenValue(val.trim());
             dispatch(updateSelectedPreset({ preset: null }));
           }}
-          placeholder='0.00'
         />
-      </div>
-    </div>
+
+        <IconButton
+          size='small'
+          className='cursor-pointer'
+          onClick={handleDecrement}
+          disabled={decrementDisabled || disabled}
+        >
+          <RemoveIcon />
+        </IconButton>
+      </Box>
+
+      <StyledLabel fontSize='13px' color='#696c80'>
+        {''}
+      </StyledLabel>
+    </StyledBox>
   );
 }

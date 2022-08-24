@@ -1,6 +1,6 @@
 import React from 'react';
 import { Currency } from '@uniswap/sdk-core';
-import { Pool } from '@uniswap/v3-sdk';
+import { Pool } from 'v3lib/entities/pool';
 import Card from 'components/v3/Card/Card';
 import { AutoColumn } from 'components/v3/Column';
 

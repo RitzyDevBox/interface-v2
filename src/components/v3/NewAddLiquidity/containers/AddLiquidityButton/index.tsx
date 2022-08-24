@@ -20,7 +20,15 @@ import { ZERO_PERCENT } from 'constants/v3/misc';
 import { useIsNetworkFailedImmediate } from 'hooks/v3/useIsNetworkFailed';
 import { JSBI } from '@uniswap/sdk';
 import { NONFUNGIBLE_POSITION_MANAGER_ADDRESSES } from 'constants/v3/addresses';
-import { calculateGasMarginV3 } from 'utils';
+import {
+  addMaticToMetamask,
+  calculateGasMarginV3,
+  isSupportedNetwork,
+} from 'utils';
+import { StyledButton } from 'components/v3/Common/styledElements';
+import { useWalletModalToggle } from 'state/application/hooks';
+import { Box } from '@material-ui/core';
+import { useTranslation } from 'react-i18next';
 
 interface IAddLiquidityButton {
   baseCurrency: Currency | undefined;
@@ -48,7 +56,13 @@ export function AddLiquidityButton({
 
   const dispatch = useAppDispatch();
 
+  const [attemptingTxn, setAttemptingTxn] = useState(false);
+  const [txPending, setTxPending] = useState(false);
+  const [approvingA, setApprovingA] = useState(false);
+  const [approvingB, setApprovingB] = useState(false);
+
   const txHash = useAddLiquidityTxHash();
+  const { t } = useTranslation();
 
   const isNetworkFailed = useIsNetworkFailedImmediate();
 
@@ -66,11 +80,11 @@ export function AddLiquidityButton({
 
   const addTransaction = useTransactionAdder();
 
-  const [approvalA] = useApproveCallback(
+  const [approvalA, approveACallback] = useApproveCallback(
     mintInfo.parsedAmounts[Field.CURRENCY_A],
     chainId ? NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[chainId] : undefined,
   );
-  const [approvalB] = useApproveCallback(
+  const [approvalB, approveBCallback] = useApproveCallback(
     mintInfo.parsedAmounts[Field.CURRENCY_B],
     chainId ? NONFUNGIBLE_POSITION_MANAGER_ADDRESSES[chainId] : undefined,
   );
@@ -160,13 +174,92 @@ export function AddLiquidityButton({
     }
   }
 
+  const { ethereum } = window as any;
+  const toggleWalletModal = useWalletModalToggle();
+  const connectWallet = () => {
+    if (ethereum && !isSupportedNetwork(ethereum)) {
+      addMaticToMetamask();
+    } else {
+      toggleWalletModal();
+    }
+  };
+
   return (
-    <button
-      className='add-buttons__liquidity ml-a'
-      disabled={!isReady}
-      onClick={onAdd}
-    >
-      {title}
-    </button>
+    <Box className='flex-wrap' mt={2.5}>
+      {(approvalA === ApprovalState.NOT_APPROVED ||
+        approvalA === ApprovalState.PENDING ||
+        approvalB === ApprovalState.NOT_APPROVED ||
+        approvalB === ApprovalState.PENDING) &&
+        !mintInfo?.errorMessage && (
+          <Box className='flex fullWidth justify-between' mb={2}>
+            {approvalA !== ApprovalState.APPROVED && (
+              <Box
+                width={approvalB !== ApprovalState.APPROVED ? '48%' : '100%'}
+              >
+                <StyledButton
+                  onClick={async () => {
+                    // setApprovingA(true);
+                    // try {
+                    //   await approveACallback();
+                    //   setApprovingA(false);
+                    // } catch (e) {
+                    //   setApprovingA(false);
+                    // }
+                  }}
+                  disabled={approvingA || approvalA === ApprovalState.PENDING}
+                >
+                  {approvalA === ApprovalState.PENDING
+                    ? `${t('approving')} ${
+                        mintInfo?.currencies?.[Field.CURRENCY_A]?.symbol
+                      }`
+                    : `${t('approve')} ${
+                        mintInfo?.currencies?.[Field.CURRENCY_A]?.symbol
+                      }`}
+                </StyledButton>
+              </Box>
+            )}
+            {approvalB !== ApprovalState.APPROVED && (
+              <Box
+                width={approvalA !== ApprovalState.APPROVED ? '48%' : '100%'}
+              >
+                <StyledButton
+                  fullWidth
+                  onClick={async () => {
+                    setApprovingB(true);
+                    try {
+                      await approveBCallback();
+                      setApprovingB(false);
+                    } catch (e) {
+                      setApprovingB(false);
+                    }
+                  }}
+                  disabled={approvingB || approvalB === ApprovalState.PENDING}
+                >
+                  {approvalB === ApprovalState.PENDING
+                    ? `${t('approving')} ${
+                        mintInfo?.currencies?.[Field.CURRENCY_B]?.symbol
+                      }`
+                    : `${t('approve')} ${
+                        mintInfo?.currencies?.[Field.CURRENCY_B]?.symbol
+                      }`}
+                </StyledButton>
+              </Box>
+            )}
+          </Box>
+        )}
+
+      <StyledButton
+        disabled={
+          Boolean(account) &&
+          (Boolean(mintInfo?.errorMessage) ||
+            approvalA !== ApprovalState.APPROVED ||
+            approvalB !== ApprovalState.APPROVED)
+        }
+        onClick={account ? onAdd : connectWallet}
+      >
+        {' '}
+        {title}
+      </StyledButton>
+    </Box>
   );
 }

@@ -185,3 +185,25 @@ body {
     margin-left: 4px;
   }
 }
+
+.token-select-background-v3 {
+  width: 176px;
+  height: 44px;
+  padding: 10px 12px 10px 10px;
+  border-radius: 22px;
+  background-color: #404557;
+}
+
+@media (min-width: 300px) {
+  .token-select-background-v3  {
+    width: 150px;
+  }
+}
+
+.token-select-background-small-v3 {
+  width: 110px;
+  height: 44px;
+  padding: 10px 12px 10px 10px;
+  border-radius: 22px;
+  background-color: #404557;
+}
