@@ -23,6 +23,7 @@ import { ReactComponent as HelpIcon } from 'assets/images/HelpIcon1.svg';
 import { NewAddLiquidityPage } from 'components/v3/NewAddLiquidity';
 import YourLiquidityPools from 'pages/PoolsPage/YourLiquidityPools';
 import useParsedQueryString from 'hooks/useParsedQueryString';
+import PositionPage from './PositionPage';
 
 export default function Pool() {
   const [userHideClosedPositions, setUserHideClosedPositions] = useState(false);
@@ -154,7 +155,7 @@ export default function Pool() {
         </Grid>
         <Grid item xs={12} sm={12} md={7}>
           <Box className='wrapper'>
-            <YourLiquidityPools />
+            <PositionPage />
           </Box>
         </Grid>
       </Grid>

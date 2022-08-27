@@ -109,7 +109,7 @@ export const ConfirmationModalContent: React.FC<ConfirmationModalContentProps> =
     <Box padding={4}>
       <Box className='txModalHeader'>
         <h5>{title}</h5>
-        <CloseIcon onClick={onDismiss} />
+        <CloseIcon className='cursor-pointer' onClick={onDismiss} />
       </Box>
       {content()}
     </Box>
@@ -125,7 +125,8 @@ export const ConfirmationModalContentV3: React.FC<ConfirmationModalContentProps>
     <Box padding={4}>
       <Box className='flex justify-between items-center'>
         <StyledLabel fontSize='16px'>{title}</StyledLabel>
-        <CloseIcon onClick={onDismiss} />
+
+        <CloseIcon className='cursor-pointer' onClick={onDismiss} />
       </Box>
       {content()}
     </Box>

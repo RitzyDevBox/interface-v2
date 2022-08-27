@@ -68,9 +68,9 @@ export function NewAddLiquidityPage() {
   const params: any = useParams();
 
   const currencyIdA =
-    params.currencyIdA ?? '0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619';
+    params.currencyIdA ?? '0x36ee587b148cfb474f1211b1c1edef2116285d28'; //'0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619';
   const currencyIdB =
-    params.currencyIdB ?? '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
+    params.currencyIdB ?? '0xe68c76bd4cceea3bb6655ff708f847206f3d5b3c'; //'0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174';
 
   const history = useHistory();
   const [isRejected, setRejected] = useState(false);
@@ -363,44 +363,6 @@ export function NewAddLiquidityPage() {
     }
   }, [hidePriceFormatter]);
 
-  // useEffect(() => {
-  //   return () => {
-  //     resetState();
-  //     dispatch(updateCurrentStep({ currentStep: 0 }));
-  //   };
-  // }, []);
-
-  // useEffect(() => {
-  //   switch (currentStep) {
-  //     // case 0: {
-  //     //     history.push(`/add/${currencyIdA}/${currencyIdB}/select-pair`);
-  //     //     break;
-  //     // }
-  //     case 1: {
-  //       if (!mintInfo.noLiquidity) {
-  //         history.push(`/add/${currencyIdA}/${currencyIdB}/select-range`);
-  //       } else {
-  //         history.push(`/add/${currencyIdA}/${currencyIdB}/initial-price`);
-  //       }
-  //       break;
-  //     }
-  //     case 2: {
-  //       if (!mintInfo.noLiquidity) {
-  //         history.push(`/add/${currencyIdA}/${currencyIdB}/enter-amounts`);
-  //       } else {
-  //         history.push(`/add/${currencyIdA}/${currencyIdB}/select-range`);
-  //       }
-  //       break;
-  //     }
-  //     case 3: {
-  //       if (mintInfo.noLiquidity) {
-  //         history.push(`/add/${currencyIdA}/${currencyIdB}/enter-amounts`);
-  //       }
-  //       break;
-  //     }
-  //   }
-  // }, [currencyIdA, currencyIdB, history, currentStep, mintInfo.noLiquidity]);
-
   const { ethereum } = window as any;
   const buttonText = useMemo(() => {
     if (account) {
@@ -458,33 +420,6 @@ export function NewAddLiquidityPage() {
         {t('Select Pair')}
       </Box>
       <Box mt={2.5}>
-        {/* {showConfirm && (
-        <TransactionConfirmationModal
-          isOpen={showConfirm}
-          onDismiss={handleDismissConfirmation}
-          attemptingTxn={attemptingTxn}
-          txPending={txPending}
-          hash={txHash}
-          content={() =>
-            addLiquidityErrorMessage ? (
-              <TransactionErrorContent
-                onDismiss={handleDismissConfirmation}
-                message={addLiquidityErrorMessage}
-              />
-            ) : (
-              <ConfirmationModalContentV3
-                title={t('Supply Liquidity')}
-                onDismiss={handleDismissConfirmation}
-                content={modalHeaderV3}
-              />
-            )
-          }
-          pendingText={pendingText}
-          modalContent={
-            txPending ? t('submittedTxLiquidity') : t('successAddedliquidity')
-          }
-        />
-      )} */}
         <SelectPair
           baseCurrency={baseCurrency}
           quoteCurrency={quoteCurrency}
@@ -507,7 +442,7 @@ export function NewAddLiquidityPage() {
           disabled={!stepPair}
           isCompleted={stepRange}
           additionalStep={stepInitialPrice}
-          priceFormat={PriceFormats.TOKEN} // todo add selected format
+          priceFormat={PriceFormats.TOKEN}
           backStep={stepInitialPrice ? 1 : 0}
         />
 
@@ -532,93 +467,10 @@ export function NewAddLiquidityPage() {
             handleAddLiquidity={() => {
               console.log('liq a');
             }}
+            priceFormat={priceFormat}
+            handlePriceFormat={handlePriceFormat}
           />
         </Box>
-
-        {/* <Box className='flex-wrap' mt={2.5}>
-        {(approvalA === ApprovalState.NOT_APPROVED ||
-          approvalA === ApprovalState.PENDING ||
-          approvalB === ApprovalState.NOT_APPROVED ||
-          approvalB === ApprovalState.PENDING) &&
-          !mintInfo?.errorMessage && (
-            <Box className='flex fullWidth justify-between' mb={2}>
-              {approvalA !== ApprovalState.APPROVED && (
-                <Box
-                  width={
-                    approvalB !== ApprovalState.APPROVED ? '48%' : '100%'
-                  }
-                >
-                  <StyledButton
-                    onClick={async () => {
-                      setApprovingA(true);
-                      try {
-                        await approveACallback();
-                        setApprovingA(false);
-                      } catch (e) {
-                        setApprovingA(false);
-                      }
-                    }}
-                    disabled={
-                      approvingA || approvalA === ApprovalState.PENDING
-                    }
-                  >
-                    {approvalA === ApprovalState.PENDING
-                      ? `${t('approving')} ${
-                          mintInfo?.currencies?.[Field.CURRENCY_A]?.symbol
-                        }`
-                      : `${t('approve')} ${
-                          mintInfo?.currencies?.[Field.CURRENCY_A]?.symbol
-                        }`}
-                  </StyledButton>
-                </Box>
-              )}
-              {approvalB !== ApprovalState.APPROVED && (
-                <Box
-                  width={
-                    approvalA !== ApprovalState.APPROVED ? '48%' : '100%'
-                  }
-                >
-                  <StyledButton
-                    fullWidth
-                    onClick={async () => {
-                      setApprovingB(true);
-                      try {
-                        await approveBCallback();
-                        setApprovingB(false);
-                      } catch (e) {
-                        setApprovingB(false);
-                      }
-                    }}
-                    disabled={
-                      approvingB || approvalB === ApprovalState.PENDING
-                    }
-                  >
-                    {approvalB === ApprovalState.PENDING
-                      ? `${t('approving')} ${
-                          mintInfo?.currencies?.[Field.CURRENCY_B]?.symbol
-                        }`
-                      : `${t('approve')} ${
-                          mintInfo?.currencies?.[Field.CURRENCY_B]?.symbol
-                        }`}
-                  </StyledButton>
-                </Box>
-              )}
-            </Box>
-          )}
-
-        <StyledButton
-          disabled={
-            Boolean(account) &&
-            (Boolean(mintInfo?.errorMessage) ||
-              approvalA !== ApprovalState.APPROVED ||
-              approvalB !== ApprovalState.APPROVED)
-          }
-          onClick={account ? onAdd : connectWallet}
-        >
-          {' '}
-          {buttonText}
-        </StyledButton>
-      </Box> */}
       </Box>
     </Box>
   );

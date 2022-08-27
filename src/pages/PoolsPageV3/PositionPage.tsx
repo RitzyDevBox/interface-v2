@@ -6,6 +6,7 @@ import { useV3PositionFromTokenId } from 'hooks/v3/useV3Positions';
 import {
   NavLink,
   RouteComponentProps,
+  useHistory,
   useLocation,
   useParams,
 } from 'react-router-dom';
@@ -60,6 +61,10 @@ import RateToggle from 'components/v3/RateToggle';
 import DoubleCurrencyLogo from 'components/DoubleCurrencyLogo';
 import { getRatio } from 'utils/v3/getRatio';
 import { useInverter } from 'hooks/v3/useInverter';
+import { Box } from '@material-ui/core';
+import VersionToggle from 'components/Toggle/VersionToggle';
+import { Trans, useTranslation } from 'react-i18next';
+import useParsedQueryString from 'hooks/useParsedQueryString';
 
 function useQuery() {
   const { search } = useLocation();
@@ -73,6 +78,7 @@ export default function PositionPage() {
   const { chainId, account, library } = useActiveWeb3React();
 
   const query = useQuery();
+  const { t } = useTranslation();
 
   const isOnFarming = useMemo(() => query.get('onFarming'), [
     tokenIdFromUrl,
@@ -393,295 +399,350 @@ export default function PositionPage() {
       !collectMigrationHash,
   );
 
-  return (
-    <div className={'maw-765 mh-a'}>
-      {loading || _poolState === PoolState.LOADING ? (
-        <Card classes={'br-24 f c f-ac f-jc h-800'}>
-          <Loader stroke={'white'} size={'2rem'} />
-        </Card>
-      ) : (
-        <>
-          <NavLink
-            className={'c-p mb-1 f w-fc hover-op trans-op'}
-            to='/v3Pools'
-          >
-            ← Back to Pools Overview
-          </NavLink>
-          <Card classes={'br-24 p-2 mxs_p-1'}>
-            <AutoColumn gap='1'>
-              <div className={'flex-s-between ms_fd-c'}>
-                <div className={'f f-ac ms_w-100 ms_mb-1 mxs_fd-c'}>
-                  <div className={'f f-ac ml-1 mxs_ml-2 mxs_w-100 mxs_mb-05'}>
-                    <DoubleCurrencyLogo
-                      currency0={currencyBase}
-                      currency1={currencyQuote}
-                      size={24}
-                    />
-                    <span className={'mr-05 fs-125 b'}>
-                      &nbsp;{currencyQuote?.symbol}&nbsp;/&nbsp;
-                      {currencyBase?.symbol}
-                    </span>
+  const [openPoolFinder, setOpenPoolFinder] = useState(false);
+
+  const parsedQuery = useParsedQueryString();
+  const poolVersion =
+    parsedQuery && parsedQuery.version ? (parsedQuery.version as string) : 'v3';
+
+  const history = useHistory();
+  const handleToggleAction = useCallback(
+    (isV3: boolean) => {
+      const url = isV3 ? '/v3Pools?version=v3' : '/pools?version=v2';
+      history.push(url);
+    },
+    [history],
+  );
+
+  const oldCard = () => {
+    return (
+      <div className={'maw-765 mh-a'}>
+        {loading || _poolState === PoolState.LOADING ? (
+          <Card classes={'br-24 f c f-ac f-jc h-800'}>
+            <Loader stroke={'white'} size={'2rem'} />
+          </Card>
+        ) : (
+          <>
+            <NavLink
+              className={'c-p mb-1 f w-fc hover-op trans-op'}
+              to='/v3Pools'
+            >
+              ← Back to Pools Overview
+            </NavLink>
+            <Card classes={'br-24 p-2 mxs_p-1'}>
+              <AutoColumn gap='1'>
+                <div className={'flex-s-between ms_fd-c'}>
+                  <div className={'f f-ac ms_w-100 ms_mb-1 mxs_fd-c'}>
+                    <div className={'f f-ac ml-1 mxs_ml-2 mxs_w-100 mxs_mb-05'}>
+                      <DoubleCurrencyLogo
+                        currency0={currencyBase}
+                        currency1={currencyQuote}
+                        size={24}
+                      />
+                      <span className={'mr-05 fs-125 b'}>
+                        &nbsp;{currencyQuote?.symbol}&nbsp;/&nbsp;
+                        {currencyBase?.symbol}
+                      </span>
+                    </div>
+                    <div className={'f f-ac mxs_w-100'}>
+                      <MouseoverTooltip text={`Current pool fee.`}>
+                        <Badge className={'mr-05 fs-085'}>
+                          {new Percent(
+                            existingPosition?.pool?.fee || 100,
+                            1_000_000,
+                          ).toSignificant()}
+                          %
+                        </Badge>
+                      </MouseoverTooltip>
+                      <RangeBadge removed={removed} inRange={inRange} />
+                    </div>
                   </div>
-                  <div className={'f f-ac mxs_w-100'}>
-                    <MouseoverTooltip text={`Current pool fee.`}>
-                      <Badge className={'mr-05 fs-085'}>
-                        {new Percent(
-                          existingPosition?.pool?.fee || 100,
-                          1_000_000,
-                        ).toSignificant()}
-                        %
-                      </Badge>
-                    </MouseoverTooltip>
-                    <RangeBadge removed={removed} inRange={inRange} />
-                  </div>
-                </div>
-                {ownsNFT && (
-                  <div className={'f ms_w-100'}>
-                    {currency0 && currency1 && tokenId ? (
-                      <NavLink
-                        to={`/increase/${currencyId(
-                          currency0,
-                          chainId || 137,
-                        )}/${currencyId(currency1, chainId || 137)}/${tokenId}`}
-                        className={'btn primary pv-025 ph-05 br-8 mr-05'}
-                      >
-                        Increase Liquidity
-                      </NavLink>
-                    ) : null}
-                    {tokenId && !removed ? (
-                      <NavLink
-                        to={`/remove/${tokenId}`}
-                        className={'btn primary pv-025 ph-05 br-8'}
-                      >
-                        Remove Liquidity
-                      </NavLink>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-              <Card isDark={false} classes={'p-1 br-12'}>
-                <div className={'f c mb-05'}>
-                  <span className={'b mb-05'}>Liquidity</span>
-                  {_fiatValueOfLiquidity?.greaterThan(new Fraction(1, 100)) ? (
-                    <span className={'fs-2'}>
-                      $
-                      {_fiatValueOfLiquidity.toFixed(2, {
-                        groupSeparator: ',',
-                      })}
-                    </span>
-                  ) : (
-                    <span className={'fs-2'}>$-</span>
+                  {ownsNFT && (
+                    <div className={'f ms_w-100'}>
+                      {currency0 && currency1 && tokenId ? (
+                        <NavLink
+                          to={`/increase/${currencyId(
+                            currency0,
+                            chainId || 137,
+                          )}/${currencyId(
+                            currency1,
+                            chainId || 137,
+                          )}/${tokenId}`}
+                          className={'btn primary pv-025 ph-05 br-8 mr-05'}
+                        >
+                          Increase Liquidity
+                        </NavLink>
+                      ) : null}
+                      {tokenId && !removed ? (
+                        <NavLink
+                          to={`/remove/${tokenId}`}
+                          className={'btn primary pv-025 ph-05 br-8'}
+                        >
+                          Remove Liquidity
+                        </NavLink>
+                      ) : null}
+                    </div>
                   )}
                 </div>
-                <Card isDark classes={'p-1 br-12'}>
-                  <div className={'flex-s-between mb-1'}>
-                    <LinkedCurrency
-                      chainId={chainId}
-                      currency={currencyQuote}
-                    />
-                    <div className={'f f-ac'}>
-                      <span>
-                        {inverted
-                          ? formatCurrencyAmount(position?.amount0, 4)
-                          : formatCurrencyAmount(position?.amount1, 4)}
-                      </span>
-                      {typeof ratio === 'number' && !removed ? (
-                        <Badge className={'ml-05 fs-075'}>
-                          {inverted ? ratio : 100 - ratio}%
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className={'flex-s-between'}>
-                    <LinkedCurrency chainId={chainId} currency={currencyBase} />
-                    <div className={'f f-ac'}>
-                      <span>
-                        {inverted
-                          ? formatCurrencyAmount(position?.amount1, 4)
-                          : formatCurrencyAmount(position?.amount0, 4)}
-                      </span>
-                      {typeof ratio === 'number' && !removed ? (
-                        <Badge className={'ml-05 fs-075'}>
-                          {inverted ? 100 - ratio : ratio}%
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </div>
-                </Card>
-              </Card>
-              <Card isDark={false} classes={'p-1 br-12'}>
-                <div className={'f c mb-05'}>
-                  <span className={'b mb-05'}>Unclaimed fees</span>
-                  <div className={'flex-s-between'}>
-                    {_fiatValueOfFees?.greaterThan(new Fraction(1, 100)) ? (
-                      <span className={'fs-2 c-g'}>
+                <Card isDark={false} classes={'p-1 br-12'}>
+                  <div className={'f c mb-05'}>
+                    <span className={'b mb-05'}>Liquidity</span>
+                    {_fiatValueOfLiquidity?.greaterThan(
+                      new Fraction(1, 100),
+                    ) ? (
+                      <span className={'fs-2'}>
                         $
-                        {+_fiatValueOfFees.toFixed(2, { groupSeparator: ',' }) <
-                        0.01
-                          ? '<0.01'
-                          : _fiatValueOfFees?.toFixed(2, {
-                              groupSeparator: ',',
-                            })}
+                        {_fiatValueOfLiquidity.toFixed(2, {
+                          groupSeparator: ',',
+                        })}
                       </span>
                     ) : (
                       <span className={'fs-2'}>$-</span>
                     )}
-                    {ownsNFT &&
-                    (feeValue0?.greaterThan(0) ||
-                      feeValue1?.greaterThan(0) ||
-                      !!collectMigrationHash) ? (
-                      <button
-                        className={'btn primary pv-025 ph-05 br-8'}
-                        disabled={collecting || !!collectMigrationHash}
-                        onClick={collect}
-                      >
-                        {!!collectMigrationHash && !isCollectPending ? (
-                          <span>Collected</span>
-                        ) : isCollectPending || collecting ? (
-                          <Dots>Collecting</Dots>
-                        ) : (
-                          <span>Collect fees</span>
-                        )}
-                      </button>
-                    ) : null}
                   </div>
-                </div>
-                <Card isDark classes={'p-1 br-12'}>
-                  <div className={'flex-s-between mb-1'}>
-                    <div className={'f f-ac'}>
-                      <CurrencyLogo
-                        currency={feeValueUpper?.currency as WrappedCurrency}
-                        size={'24px'}
+                  <Card isDark classes={'p-1 br-12'}>
+                    <div className={'flex-s-between mb-1'}>
+                      <LinkedCurrency
+                        chainId={chainId}
+                        currency={currencyQuote}
                       />
-                      <span className={'ml-05'}>
-                        {feeValueUpper?.currency?.symbol}
-                      </span>
+                      <div className={'f f-ac'}>
+                        <span>
+                          {inverted
+                            ? formatCurrencyAmount(position?.amount0, 4)
+                            : formatCurrencyAmount(position?.amount1, 4)}
+                        </span>
+                        {typeof ratio === 'number' && !removed ? (
+                          <Badge className={'ml-05 fs-075'}>
+                            {inverted ? ratio : 100 - ratio}%
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
-                    <span>
-                      {feeValueUpper
-                        ? formatCurrencyAmount(feeValueUpper, 4)
-                        : '-'}
-                    </span>
-                  </div>
-                  <div className={'flex-s-between'}>
-                    <div className={'f f-ac'}>
-                      <CurrencyLogo
-                        currency={feeValueLower?.currency as WrappedCurrency}
-                        size={'24px'}
+                    <div className={'flex-s-between'}>
+                      <LinkedCurrency
+                        chainId={chainId}
+                        currency={currencyBase}
                       />
-                      <span className={'ml-05'}>
-                        {feeValueLower?.currency?.symbol}
-                      </span>
+                      <div className={'f f-ac'}>
+                        <span>
+                          {inverted
+                            ? formatCurrencyAmount(position?.amount1, 4)
+                            : formatCurrencyAmount(position?.amount0, 4)}
+                        </span>
+                        {typeof ratio === 'number' && !removed ? (
+                          <Badge className={'ml-05 fs-075'}>
+                            {inverted ? 100 - ratio : ratio}%
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
-                    <span>
-                      {feeValueLower
-                        ? formatCurrencyAmount(feeValueLower, 4)
-                        : '-'}
-                    </span>
-                  </div>
+                  </Card>
                 </Card>
-                {showCollectAsWeth && (
-                  <div className={'flex-s-between mt-075'}>
-                    Collect as WMATIC
-                    <Toggle
-                      id='receive-as-weth'
-                      isActive={receiveWETH}
-                      toggle={() =>
-                        setReceiveWETH((receiveWETH) => !receiveWETH)
-                      }
-                    />
-                  </div>
-                )}
-              </Card>
-              <Card isDark={false} classes={'p-1 br-12'}>
-                <div className={'flex-s-between mb-1 fs-085'}>
-                  <div className={'f f-ac mxs_fd-c'}>
-                    <div className={'mr-05 fs-1 mxs_w-100 mxs_mr-0'}>
-                      Price range
+                <Card isDark={false} classes={'p-1 br-12'}>
+                  <div className={'f c mb-05'}>
+                    <span className={'b mb-05'}>Unclaimed fees</span>
+                    <div className={'flex-s-between'}>
+                      {_fiatValueOfFees?.greaterThan(new Fraction(1, 100)) ? (
+                        <span className={'fs-2 c-g'}>
+                          $
+                          {+_fiatValueOfFees.toFixed(2, {
+                            groupSeparator: ',',
+                          }) < 0.01
+                            ? '<0.01'
+                            : _fiatValueOfFees?.toFixed(2, {
+                                groupSeparator: ',',
+                              })}
+                        </span>
+                      ) : (
+                        <span className={'fs-2'}>$-</span>
+                      )}
+                      {ownsNFT &&
+                      (feeValue0?.greaterThan(0) ||
+                        feeValue1?.greaterThan(0) ||
+                        !!collectMigrationHash) ? (
+                        <button
+                          className={'btn primary pv-025 ph-05 br-8'}
+                          disabled={collecting || !!collectMigrationHash}
+                          onClick={collect}
+                        >
+                          {!!collectMigrationHash && !isCollectPending ? (
+                            <span>Collected</span>
+                          ) : isCollectPending || collecting ? (
+                            <Dots>Collecting</Dots>
+                          ) : (
+                            <span>Collect fees</span>
+                          )}
+                        </button>
+                      ) : null}
                     </div>
-                    <div className={'mxs_w-100 mxs_mt-05'}>
-                      <RangeBadge removed={removed} inRange={inRange} />
-                      <span style={{ width: '8px' }} />
-                    </div>
                   </div>
-                  <div>
-                    {currencyBase && currencyQuote && (
-                      <RateToggle
-                        currencyA={currencyBase}
-                        currencyB={currencyQuote}
-                        handleRateToggle={() =>
-                          setManuallyInverted(!manuallyInverted)
+                  <Card isDark classes={'p-1 br-12'}>
+                    <div className={'flex-s-between mb-1'}>
+                      <div className={'f f-ac'}>
+                        <CurrencyLogo
+                          currency={feeValueUpper?.currency as WrappedCurrency}
+                          size={'24px'}
+                        />
+                        <span className={'ml-05'}>
+                          {feeValueUpper?.currency?.symbol}
+                        </span>
+                      </div>
+                      <span>
+                        {feeValueUpper
+                          ? formatCurrencyAmount(feeValueUpper, 4)
+                          : '-'}
+                      </span>
+                    </div>
+                    <div className={'flex-s-between'}>
+                      <div className={'f f-ac'}>
+                        <CurrencyLogo
+                          currency={feeValueLower?.currency as WrappedCurrency}
+                          size={'24px'}
+                        />
+                        <span className={'ml-05'}>
+                          {feeValueLower?.currency?.symbol}
+                        </span>
+                      </div>
+                      <span>
+                        {feeValueLower
+                          ? formatCurrencyAmount(feeValueLower, 4)
+                          : '-'}
+                      </span>
+                    </div>
+                  </Card>
+                  {showCollectAsWeth && (
+                    <div className={'flex-s-between mt-075'}>
+                      Collect as WMATIC
+                      <Toggle
+                        id='receive-as-weth'
+                        isActive={receiveWETH}
+                        toggle={() =>
+                          setReceiveWETH((receiveWETH) => !receiveWETH)
                         }
                       />
-                    )}
+                    </div>
+                  )}
+                </Card>
+                <Card isDark={false} classes={'p-1 br-12'}>
+                  <div className={'flex-s-between mb-1 fs-085'}>
+                    <div className={'f f-ac mxs_fd-c'}>
+                      <div className={'mr-05 fs-1 mxs_w-100 mxs_mr-0'}>
+                        Price range
+                      </div>
+                      <div className={'mxs_w-100 mxs_mt-05'}>
+                        <RangeBadge removed={removed} inRange={inRange} />
+                        <span style={{ width: '8px' }} />
+                      </div>
+                    </div>
+                    <div>
+                      {currencyBase && currencyQuote && (
+                        <RateToggle
+                          currencyA={currencyBase}
+                          currencyB={currencyQuote}
+                          handleRateToggle={() =>
+                            setManuallyInverted(!manuallyInverted)
+                          }
+                        />
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className={'f f-ac mb-1 ms_fd-c'}>
-                  <Card isDark classes={'w-100 p-1 br-12'}>
-                    <AutoColumn gap='1' justify='center'>
-                      <span
-                        className={'c-lg fs-095 ta-c'}
-                        style={{ color: 'var(--white)' }}
-                      >
-                        Min price
-                      </span>
-                      <span className={'fs-125 ta-c'}>
-                        {formatTickPrice(priceLower, tickAtLimit, Bound.LOWER)}
-                      </span>
-                      <span
-                        className={'c-lg fs-095 ta-c'}
-                        style={{ color: 'var(--white)' }}
-                      >
-                        {currencyQuote?.symbol} per {currencyBase?.symbol}
-                      </span>
-                      {inRange && (
-                        <span className={'c-lg fs-075 ta-c'}>
-                          Your position will be 100% {currencyBase?.symbol} at
-                          this price.
+                  <div className={'f f-ac mb-1 ms_fd-c'}>
+                    <Card isDark classes={'w-100 p-1 br-12'}>
+                      <AutoColumn gap='1' justify='center'>
+                        <span
+                          className={'c-lg fs-095 ta-c'}
+                          style={{ color: 'var(--white)' }}
+                        >
+                          Min price
                         </span>
-                      )}
-                    </AutoColumn>
-                  </Card>
-                  <span className={'mh-1 c-lg hide-s'}>⟷</span>
-                  <span className={'show-s c-lg mv-05 fs-125'}>↕</span>
-                  <Card isDark classes={'w-100 p-1 br-12'}>
-                    <AutoColumn gap='1' justify='center'>
-                      <span
-                        className={'c-lg fs-095 ta-c'}
-                        style={{ color: 'var(--white)' }}
-                      >
-                        Max price
-                      </span>
-                      <span className={'fs-125 ta-c'}>
-                        {formatTickPrice(priceUpper, tickAtLimit, Bound.UPPER)}
-                      </span>
-                      <span
-                        className={'c-lg fs-095 ta-c'}
-                        style={{ color: 'var(--white)' }}
-                      >
-                        {currencyQuote?.symbol} per {currencyBase?.symbol}
-                      </span>
-                      {inRange && (
-                        <span className={'c-lg fs-075 ta-c'}>
-                          Your position will be 100% {currencyQuote?.symbol} at
-                          this price.
+                        <span className={'fs-125 ta-c'}>
+                          {formatTickPrice(
+                            priceLower,
+                            tickAtLimit,
+                            Bound.LOWER,
+                          )}
                         </span>
-                      )}
-                    </AutoColumn>
-                  </Card>
-                </div>
-                <CurrentPriceCard
-                  inverted={inverted}
-                  pool={_pool}
-                  currencyQuote={currencyQuote}
-                  currencyBase={currencyBase}
-                />
-              </Card>
-            </AutoColumn>
-          </Card>
-        </>
-      )}
-    </div>
+                        <span
+                          className={'c-lg fs-095 ta-c'}
+                          style={{ color: 'var(--white)' }}
+                        >
+                          {currencyQuote?.symbol} per {currencyBase?.symbol}
+                        </span>
+                        {inRange && (
+                          <span className={'c-lg fs-075 ta-c'}>
+                            Your position will be 100% {currencyBase?.symbol} at
+                            this price.
+                          </span>
+                        )}
+                      </AutoColumn>
+                    </Card>
+                    <span className={'mh-1 c-lg hide-s'}>⟷</span>
+                    <span className={'show-s c-lg mv-05 fs-125'}>↕</span>
+                    <Card isDark classes={'w-100 p-1 br-12'}>
+                      <AutoColumn gap='1' justify='center'>
+                        <span
+                          className={'c-lg fs-095 ta-c'}
+                          style={{ color: 'var(--white)' }}
+                        >
+                          Max price
+                        </span>
+                        <span className={'fs-125 ta-c'}>
+                          {formatTickPrice(
+                            priceUpper,
+                            tickAtLimit,
+                            Bound.UPPER,
+                          )}
+                        </span>
+                        <span
+                          className={'c-lg fs-095 ta-c'}
+                          style={{ color: 'var(--white)' }}
+                        >
+                          {currencyQuote?.symbol} per {currencyBase?.symbol}
+                        </span>
+                        {inRange && (
+                          <span className={'c-lg fs-075 ta-c'}>
+                            Your position will be 100% {currencyQuote?.symbol}{' '}
+                            at this price.
+                          </span>
+                        )}
+                      </AutoColumn>
+                    </Card>
+                  </div>
+                  <CurrentPriceCard
+                    inverted={inverted}
+                    pool={_pool}
+                    currencyQuote={currencyQuote}
+                    currencyBase={currencyBase}
+                  />
+                </Card>
+              </AutoColumn>
+            </Card>
+          </>
+        )}
+      </div>
+    );
+  };
+  return (
+    <>
+      <Box className='pageHeading'>
+        <p className='weight-600'>{t('My Liquidity Pools')}</p>
+        <VersionToggle
+          isV3={poolVersion === 'v3'}
+          onToggleV3={handleToggleAction}
+        />
+      </Box>
+      <Box>
+        <small className='liquidityText'>
+          <Trans
+            i18nKey='poolMissingComment'
+            components={{
+              pspan: <small onClick={() => setOpenPoolFinder(true)} />,
+            }}
+          />
+        </small>
+      </Box>
+    </>
   );
 }

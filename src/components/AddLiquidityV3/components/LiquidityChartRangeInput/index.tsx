@@ -226,7 +226,7 @@ export default function LiquidityChartRangeInput({
   );
 
   return (
-    <Box style={{ minHeight: '260px' }}>
+    <Box>
       {isUninitialized ? (
         <div>Your position will appear here.</div>
       ) : isLoading ? (

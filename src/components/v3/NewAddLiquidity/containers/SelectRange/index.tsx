@@ -33,6 +33,8 @@ import { PoolState } from 'hooks/usePools';
 import Loader from 'components/Loader';
 import { computePoolAddress } from 'hooks/v3/computePoolAddress';
 import { POOL_DEPLOYER_ADDRESS } from 'constants/v3/addresses';
+import { StyledLabel } from 'components/v3/Common/styledElements';
+import { useTranslation } from 'react-i18next';
 
 interface IRangeSelector {
   currencyA: Currency | null | undefined;
@@ -63,6 +65,7 @@ export function SelectRange({
 
   const currencyAUSDC = useUSDCPrice(currencyA ?? undefined);
   const currencyBUSDC = useUSDCPrice(currencyB ?? undefined);
+  const { t } = useTranslation();
 
   //TODO - create one main isUSD
   const isUSD = useMemo(() => {
@@ -218,17 +221,19 @@ export function SelectRange({
         apr={aprString}
       />
 
-      <Box>
-        {currencyA && currencyB && (
-          <USDPrices
-            currencyA={currencyA}
-            currencyB={currencyB}
-            currencyAUSDC={currencyAUSDC}
-            currencyBUSDC={currencyBUSDC}
-            priceFormat={priceFormat}
-          />
-        )}
-      </Box>
+      {currencyA && currencyB && (
+        <Box className='flex flex-column justify-center items-center'>
+          <StyledLabel fontSize='12px' className='flex  '>
+            {t('Current Price')}:{' '}
+            {!mintInfo?.price ? <Loader /> : mintInfo?.price?.toSignificant()}
+          </StyledLabel>
+          <StyledLabel fontSize='12px' color='#696c80' className='ml-1'>
+            {t(
+              ` ${mintInfo?.currencies?.CURRENCY_B?.symbol} per ${mintInfo?.currencies?.CURRENCY_A?.symbol}`,
+            )}
+          </StyledLabel>
+        </Box>
+      )}
 
       <RangeSelector
         priceLower={priceLower}
@@ -249,41 +254,43 @@ export function SelectRange({
         priceFormat={priceFormat}
       />
 
-      {!currencyA || !currencyB ? (
-        <div>...</div>
-      ) : (
-        <LiquidityChartRangeInput
-          currencyA={currencyA ?? undefined}
-          currencyB={currencyB ?? undefined}
-          feeAmount={mintInfo.dynamicFee}
-          ticksAtLimit={mintInfo.ticksAtLimit}
-          price={
-            priceFormat === PriceFormats.USD
-              ? currentPriceInUSD
-                ? parseFloat(currentPriceInUSD.toSignificant(5))
+      <Box className='mt-2 mb-2'>
+        {!currencyA || !currencyB ? (
+          <Box className='text-center'>{t(`Loading...`)}</Box>
+        ) : (
+          <LiquidityChartRangeInput
+            currencyA={currencyA ?? undefined}
+            currencyB={currencyB ?? undefined}
+            feeAmount={mintInfo.dynamicFee}
+            ticksAtLimit={mintInfo.ticksAtLimit}
+            price={
+              priceFormat === PriceFormats.USD
+                ? currentPriceInUSD
+                  ? parseFloat(currentPriceInUSD.toSignificant(5))
+                  : undefined
+                : price
+                ? parseFloat(price)
                 : undefined
-              : price
-              ? parseFloat(price)
-              : undefined
-          }
-          priceLower={priceLower}
-          priceUpper={priceUpper}
-          onLeftRangeInput={onLeftRangeInput}
-          onRightRangeInput={onRightRangeInput}
-          interactive={false}
-          priceFormat={priceFormat}
-        />
-      )}
+            }
+            priceLower={priceLower}
+            priceUpper={priceUpper}
+            onLeftRangeInput={onLeftRangeInput}
+            onRightRangeInput={onRightRangeInput}
+            interactive={false}
+            priceFormat={priceFormat}
+          />
+        )}
+      </Box>
 
-      {mintInfo.outOfRange && (
-        <div className='range__notification out-of-range'>
-          <div>Out of range</div>
-        </div>
+      {mintInfo.invalidRange && (
+        <StyledLabel className='text-center' fontSize='14px'>
+          {t(`Out of range`)}
+        </StyledLabel>
       )}
       {mintInfo.invalidRange && (
-        <div className='range__notification error w-100'>
-          <div>Invalid range</div>
-        </div>
+        <StyledLabel className='text-center' fontSize='14px'>
+          {t(`Invalid range`)}
+        </StyledLabel>
       )}
     </Box>
   );

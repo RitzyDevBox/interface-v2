@@ -124,6 +124,7 @@ const Header: React.FC = () => {
 
   return (
     <Box className='header'>
+      {console.log('pathname', pathname)}
       <WalletModal
         ENSName={ENSName ?? undefined}
         pendingTransactions={pending}
@@ -140,7 +141,7 @@ const Header: React.FC = () => {
         <Box className='mainMenu'>
           {menuItems.map((val, index) => (
             <Link
-              to={val.link}
+              to={val.link === '/pools' ? '/pools?version=v2' : val.link}
               key={index}
               id={val.id}
               className={`menuItem ${
