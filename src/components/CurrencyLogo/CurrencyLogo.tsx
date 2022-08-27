@@ -61,6 +61,7 @@ const CurrencyLogo: React.FC<CurrencyLogoProps> = ({
         srcs={srcs}
         size={size}
         alt={`${currency?.symbol ?? 'token'} logo`}
+        symbol={currency?.symbol}
       />
     </Box>
   );

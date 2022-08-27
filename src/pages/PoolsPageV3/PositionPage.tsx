@@ -664,6 +664,7 @@ export default function PositionPage() {
                             Bound.LOWER,
                           )}
                         </span>
+
                         <span
                           className={'c-lg fs-095 ta-c'}
                           style={{ color: 'var(--white)' }}
@@ -744,5 +745,6 @@ export default function PositionPage() {
         </small>
       </Box>
     </>
+
   );
 }
