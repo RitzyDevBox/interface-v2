@@ -5,6 +5,7 @@ export const ChartWrapper = styled.div`
   position: relative;
   justify-content: center;
   align-content: center;
+  height: 180px;
 `;
 
 //Area

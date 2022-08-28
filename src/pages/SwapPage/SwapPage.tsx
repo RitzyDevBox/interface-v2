@@ -97,6 +97,7 @@ const SwapPage: React.FC = () => {
     <Box width='100%' mb={3} id='swap-page'>
       <Box className='pageHeading'>
         <h4>{t('swap')}</h4>
+        {/* <VersionToggle baseUrl={'swap'} /> */}
         <Box className='helpWrapper'>
           <small>{t('help')}</small>
           <HelpIcon />

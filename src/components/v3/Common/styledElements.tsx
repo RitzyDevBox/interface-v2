@@ -123,3 +123,10 @@ export const StyledEmptyDotCircle = styled.div`
   border-radius: 50%;
   border: solid 2px #3e4252;
 `;
+
+export const StyledWarningBox = styled(Box)`
+  border-radius: 12px;
+  background-color: #282d3d;
+  background-color: #4b3625;
+`;
+

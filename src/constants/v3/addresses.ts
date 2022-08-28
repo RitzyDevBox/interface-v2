@@ -38,6 +38,7 @@ export const REAL_STAKER_ADDRESS: AddressMap = {
 };
 
 export const FINITE_FARMING: AddressMap = {
+
   [ChainId.MATIC]: '0xBFc4Ec9b6669A573304a32854b681d348EA58490',
 };
 

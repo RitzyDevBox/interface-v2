@@ -1,7 +1,14 @@
+import { Box } from '@material-ui/core';
+import {
+  StyledBlueTag,
+  StyledFilledBox,
+  StyledGreenTag,
+  StyledLabel,
+  StyledSelectableBox,
+} from 'components/v3/Common/styledElements';
 import React, { useMemo } from 'react';
-import { Layers } from 'react-feather';
+import { useTranslation } from 'react-i18next';
 import { Presets } from 'state/mint/v3/reducer';
-import './index.scss';
 
 export interface IPresetArgs {
   type: Presets;
@@ -18,6 +25,8 @@ interface IPresetRanges {
   priceLower: string | undefined;
   priceUpper: string | undefined;
   price: string | undefined;
+  fee: string | undefined;
+  apr: string | undefined;
 }
 
 enum PresetProfits {
@@ -36,6 +45,8 @@ export function PresetRanges({
   priceUpper,
   isInvalid,
   outOfRange,
+  fee,
+  apr,
 }: IPresetRanges) {
   const ranges = useMemo(() => {
     if (isStablecoinPair)
@@ -131,23 +142,23 @@ export function PresetRanges({
     return res;
   }, [risk]);
 
+  const { t } = useTranslation();
+
   return (
-    <div
-      className={'preset-ranges-wrapper pl-1 mxs_pl-0 mxs_mb-2 ms_pl-0 ms_mb-2'}
-    >
-      <div className='mb-1 f f-ac'>
-        <Layers
-          style={{ display: 'block', transform: 'rotate(90deg)' }}
-          size={15}
-        />
-        <span className='ml-05'>Preset ranges</span>
-      </div>
-      {ranges.map((range, i) => (
-        <div className='i-f' key={i}>
-          <button
-            className={`preset-ranges__button ${
-              activePreset === range.type ? 'active' : ''
-            } mr-05`}
+    <Box>
+      <Box className='flex justify-between items-center' mt={2.5} mb={2.5}>
+        {ranges.map((range, i) => (
+          <StyledSelectableBox
+            key={i}
+            display='flex'
+            alignItems='center'
+            justifyContent='center'
+            active={activePreset === range.type}
+            style={{
+              height: 30,
+              width: 98,
+              marginTop: 2,
+            }}
             onClick={() => {
               handlePresetRangeSelection(range);
               if (activePreset == range.type) {
@@ -156,52 +167,110 @@ export function PresetRanges({
                 handlePresetRangeSelection(range);
               }
             }}
-            key={i}
           >
-            <div>{range.title}</div>
-          </button>
-        </div>
-      ))}
-      {_risk && !isInvalid && !isStablecoinPair && (
-        <div className={`preset-ranges__description ${outOfRange && 'mt-2'}`}>
-          <div className='f mb-05'>
-            <span>Risk:</span>
-            <div className='f f-ac f-jc ml-a'>
-              {[1, 2, 3, 4, 5].map((_, i) => (
-                <div
-                  key={i}
-                  className='preset-ranges__circle'
-                  style={{ background: '#42637b' }}
-                >
+            <StyledLabel fontSize='12px'> {t(range.title)}</StyledLabel>
+          </StyledSelectableBox>
+        ))}
+      </Box>
+
+      <Box className='flex justify-between items-center' mt={2.5} mb={2.5}>
+        <StyledFilledBox
+          width={'50%'}
+          height={64}
+          className='flex flex-col justify-evenly items-start'
+        >
+          <Box
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+              width: '100%',
+            }}
+          >
+            <StyledLabel fontSize='13px'>Risk:</StyledLabel>
+            <Box>
+              <div className='f f-ac f-jc ml-a'>
+                {[1, 2, 3, 4, 5].map((_, i) => (
                   <div
                     key={i}
-                    className='preset-ranges__circle--active'
-                    style={{ left: `calc(-100% + ${_risk[i]}%)` }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className='f'>
-            <span>Profit:</span>
-            <div className='f f-ac f-jc ml-a'>
-              {[1, 2, 3, 4, 5].map((_, i) => (
-                <div
-                  key={i}
-                  className='preset-ranges__circle'
-                  style={{ background: '#42637b' }}
-                >
+                    className='preset-ranges__circle_risk'
+                    style={{ background: '#42637b' }}
+                  >
+                    <div
+                      key={i}
+                      className='preset-ranges__circle_risk--active'
+                      style={{ left: `calc(-100% + ${_risk?.[i]}%)` }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </Box>
+          </Box>
+
+          <Box
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-around',
+              alignItems: 'center',
+              width: '100%',
+            }}
+          >
+            <StyledLabel fontSize='13px'>Profit:</StyledLabel>
+            <Box>
+              <div className='f f-ac f-jc ml-a'>
+                {[1, 2, 3, 4, 5].map((_, i) => (
                   <div
                     key={i}
-                    className='preset-ranges__circle--active'
-                    style={{ left: `calc(-100% + ${_risk[i]}%)` }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+                    className='preset-ranges__circle_profit'
+                    style={{ background: '#42637b' }}
+                  >
+                    <div
+                      key={i}
+                      className='preset-ranges__circle_profit--active'
+                      style={{ left: `calc(-100% + ${_risk?.[i]}%)` }}
+                    />
+                  </div>
+                ))}
+              </div>
+            </Box>
+          </Box>
+        </StyledFilledBox>
+
+        <StyledFilledBox
+          width={'50%'}
+          height={64}
+          className='flex flex-col justify-evenly items-start'
+          ml={1}
+        >
+          <StyledLabel style={{ marginLeft: 10 }} fontSize='13px'>
+            Selected range status:
+          </StyledLabel>
+
+          <Box
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'flex-start',
+              alignItems: 'center',
+              width: '100%',
+              marginLeft: 10,
+            }}
+          >
+            <StyledBlueTag style={{ marginRight: 10 }}>
+              <StyledLabel fontSize='12px' color='#c7cad9'>
+                {fee ? fee : '0.0%'}
+              </StyledLabel>
+            </StyledBlueTag>
+            <StyledGreenTag>
+              <StyledLabel fontSize='12px' color='#0fc679'>
+                {apr ? apr : '0.0%'}
+              </StyledLabel>
+            </StyledGreenTag>
+          </Box>
+        </StyledFilledBox>
+      </Box>
+    </Box>
   );
 }

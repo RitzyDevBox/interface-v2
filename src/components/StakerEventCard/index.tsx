@@ -15,6 +15,7 @@ import './index.scss';
 import { Link } from 'react-router-dom';
 import { ChainId } from '@uniswap/sdk';
 import EternalFarm from './EternalFarmCard';
+
 import { DoubleCurrencyLogo, Logo } from 'components';
 import {
   StyledButton,

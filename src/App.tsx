@@ -145,7 +145,10 @@ const App: React.FC = () => {
                         <PoolsPage />
                       </PageLayout>
                     </Route>
-                    <Route exact path='/v3pools'>
+                    <Route
+                      exact
+                      path='/v3pools:currencyIdA?/:currencyIdB?/:step?'
+                    >
                       <PageLayout>
                         <PoolsPageV3></PoolsPageV3>
                       </PageLayout>
@@ -155,11 +158,11 @@ const App: React.FC = () => {
                         <PositionPage></PositionPage>
                       </PageLayout>
                     </Route>
-                    <Route exact path='/add/:currencyIdA?/:currencyIdB?/:step?'>
+                    {/* <Route exact path='/add/:currencyIdA?/:currencyIdB?/:step?'>
                       <PageLayout>
                         <NewAddLiquidityPage></NewAddLiquidityPage>
                       </PageLayout>
-                    </Route>
+                    </Route> */}
                     <Route
                       exact
                       path='/increase/:currencyIdA?/:currencyIdB?/:tokenId'
