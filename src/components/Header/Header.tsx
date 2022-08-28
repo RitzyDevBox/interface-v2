@@ -25,6 +25,7 @@ import SparkleBottom from 'assets/images/SparkleBottom.svg';
 import 'components/styles/Header.scss';
 import { useTranslation } from 'react-i18next';
 import { useIsV3 } from 'state/analytics/hooks';
+import { link } from 'fs';
 
 const newTransactionsFirst = (a: TransactionDetails, b: TransactionDetails) => {
   return b.addedTime - a.addedTime;
@@ -141,7 +142,7 @@ const Header: React.FC = () => {
         <Box className='mainMenu'>
           {menuItems.map((val, index) => (
             <Link
-              to={val.link === '/pools' ? '/pools?version=v2' : val.link}
+              to={val.link}
               key={index}
               id={val.id}
               className={`menuItem ${

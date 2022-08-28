@@ -64,7 +64,6 @@ import { useInverter } from 'hooks/v3/useInverter';
 import { Box } from '@material-ui/core';
 import VersionToggle from 'components/Toggle/VersionToggle';
 import { Trans, useTranslation } from 'react-i18next';
-import useParsedQueryString from 'hooks/useParsedQueryString';
 
 function useQuery() {
   const { search } = useLocation();
@@ -401,14 +400,10 @@ export default function PositionPage() {
 
   const [openPoolFinder, setOpenPoolFinder] = useState(false);
 
-  const parsedQuery = useParsedQueryString();
-  const poolVersion =
-    parsedQuery && parsedQuery.version ? (parsedQuery.version as string) : 'v3';
-
   const history = useHistory();
   const handleToggleAction = useCallback(
     (isV3: boolean) => {
-      const url = isV3 ? '/v3Pools?version=v3' : '/pools?version=v2';
+      const url = isV3 ? '/v3Pools' : '/pools';
       history.push(url);
     },
     [history],
@@ -729,10 +724,7 @@ export default function PositionPage() {
     <>
       <Box className='pageHeading'>
         <p className='weight-600'>{t('My Liquidity Pools')}</p>
-        <VersionToggle
-          isV3={poolVersion === 'v3'}
-          onToggleV3={handleToggleAction}
-        />
+        <VersionToggle isV3={true} onToggleV3={handleToggleAction} />
       </Box>
       <Box>
         <small className='liquidityText'>
@@ -745,6 +737,5 @@ export default function PositionPage() {
         </small>
       </Box>
     </>
-
   );
 }

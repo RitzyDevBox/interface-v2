@@ -119,12 +119,10 @@ export default function Pool() {
   const { t } = useTranslation();
 
   const parsedQuery = useParsedQueryString();
-  const poolVersion =
-    parsedQuery && parsedQuery.version ? (parsedQuery.version as string) : 'v3';
   const history = useHistory();
   const handleToggleAction = useCallback(
     (isV3: boolean) => {
-      const url = isV3 ? '/v3Pools?version=v3' : '/pools?version=v2';
+      const url = isV3 ? '/v3Pools' : '/pools';
       history.push(url);
     },
     [history],
@@ -135,10 +133,7 @@ export default function Pool() {
       <Box className='pageHeading'>
         <Box className='flex row items-center'>
           <h4>{t('pool')}</h4>
-          <VersionToggle
-            isV3={poolVersion === 'v3'}
-            onToggleV3={handleToggleAction}
-          />
+          <VersionToggle isV3={true} onToggleV3={handleToggleAction} />
         </Box>
 
         <Box className='helpWrapper' style={{ alignSelf: 'flex-end' }}>

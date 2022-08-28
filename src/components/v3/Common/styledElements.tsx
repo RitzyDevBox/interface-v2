@@ -129,4 +129,3 @@ export const StyledWarningBox = styled(Box)`
   background-color: #282d3d;
   background-color: #4b3625;
 `;
-

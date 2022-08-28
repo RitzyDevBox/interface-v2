@@ -60,17 +60,6 @@ const YourLiquidityPools: React.FC = () => {
     .filter((v2Pair): v2Pair is Pair => Boolean(v2Pair));
 
   const parsedQuery = useParsedQueryString();
-  const poolVersion =
-    parsedQuery && parsedQuery.version ? (parsedQuery.version as string) : 'v3';
-
-  const history = useHistory();
-  const handleToggleAction = useCallback(
-    (isV3: boolean) => {
-      const url = isV3 ? '/v3Pools?version=v3' : '/pools?version=v2';
-      history.push(url);
-    },
-    [history],
-  );
 
   return (
     <>
@@ -82,10 +71,6 @@ const YourLiquidityPools: React.FC = () => {
       )}
       <Box className='pageHeading'>
         <p className='weight-600'>{t('yourliquidityPools')}</p>
-        <VersionToggle
-          isV3={poolVersion === 'v3'}
-          onToggleV3={handleToggleAction}
-        />
       </Box>
 
       <Box mt={3}>

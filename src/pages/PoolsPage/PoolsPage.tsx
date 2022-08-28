@@ -10,15 +10,11 @@ import { useHistory } from 'react-router-dom';
 const YourLiquidityPools = lazy(() => import('./YourLiquidityPools'));
 
 const PoolsPage: React.FC = () => {
-  const parsedQuery = useParsedQueryString();
-  const poolVersion =
-    parsedQuery && parsedQuery.version ? (parsedQuery.version as string) : 'v2';
-
   const { t } = useTranslation();
   const history = useHistory();
   const handleToggleAction = useCallback(
     (isV3: boolean) => {
-      const url = isV3 ? '/v3Pools?version=v3' : '/pools?version=v2';
+      const url = isV3 ? '/v3Pools' : '/pools';
       history.push(url);
     },
     [history],
@@ -29,10 +25,7 @@ const PoolsPage: React.FC = () => {
       <Box className='pageHeading'>
         <Box className='flex row items-center'>
           <h4>{t('pool')}</h4>
-          <VersionToggle
-            isV3={poolVersion === 'v3'}
-            onToggleV3={handleToggleAction}
-          />
+          <VersionToggle isV3={false} onToggleV3={handleToggleAction} />
         </Box>
 
         <Box className='helpWrapper' style={{ alignSelf: 'flex-end' }}>

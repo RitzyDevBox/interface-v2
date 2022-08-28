@@ -78,15 +78,11 @@ export function NewAddLiquidityPage() {
   const { account, chainId } = useActiveWeb3React();
   const { t } = useTranslation();
 
-  const toggleWalletModal = useWalletModalToggle(); // toggle wallet when disconnected
-
   const dispatch = useAppDispatch();
 
   const feeAmount = 100;
 
   const currentStep = useCurrentStep();
-
-  const [end, setEnd] = useState(false);
 
   const [priceFormat, setPriceFormat] = useState(PriceFormats.TOKEN);
 
@@ -193,9 +189,9 @@ export function NewAddLiquidityPage() {
       console.log('token a', currencyANew);
       const [idA, idB] = handleCurrencySelect(currencyANew, currencyIdB);
       if (idB === undefined) {
-        history.push(`/v3Pools?version=v3/${idA}`);
+        history.push(`/v3Pools/${idA}`);
       } else {
-        history.push(`/v3Pools?version=v3/${idA}/${idB}`);
+        history.push(`/v3Pools/${idA}/${idB}`);
       }
     },
     [handleCurrencySelect, currencyIdB, history],
@@ -205,9 +201,9 @@ export function NewAddLiquidityPage() {
     (currencyBNew: Currency) => {
       const [idB, idA] = handleCurrencySelect(currencyBNew, currencyIdA);
       if (idA === undefined) {
-        history.push(`/v3Pools?version=v3/${idB}`);
+        history.push(`/v3Pools/${idB}`);
       } else {
-        history.push(`/v3Pools?version=v3/${idA}/${idB}`);
+        history.push(`/v3Pools/${idA}/${idB}`);
       }
     },
     [handleCurrencySelect, currencyIdA, history],
@@ -320,10 +316,6 @@ export function NewAddLiquidityPage() {
 
     return [stepPair, stepRange, stepAmounts];
   }, [stepPair, stepRange, stepAmounts, stepInitialPrice, mintInfo]);
-
-  const completedSteps = useMemo(() => {
-    return Array(currentStep).map((_, i) => i + 1);
-  }, [currentStep]);
 
   const [allowedSlippage] = useUserSlippageTolerance();
   const allowedSlippagePercent: Percent = useMemo(() => {
