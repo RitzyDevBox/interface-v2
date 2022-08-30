@@ -11,6 +11,8 @@ import { useActiveWeb3React } from 'hooks';
 import 'components/styles/CurrencyInput.scss';
 import { useTranslation } from 'react-i18next';
 import CurrencySelect from 'components/CurrencySelect';
+import { useCurrencyBalance } from 'state/wallet/hooks';
+import useUSDCPrice from 'utils/useUSDCPrice';
 
 interface CurrencyInputProps {
   title?: string;
@@ -35,8 +37,6 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
   currency,
   otherCurrency,
   amount,
-  usdValue,
-  balance,
   setAmount,
   onMax,
   onHalf,
@@ -51,9 +51,11 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
   const [modalOpen, setModalOpen] = useState(false);
   const { account } = useActiveWeb3React();
 
-  const handleOpenModal = useCallback(() => {
-    setModalOpen(true);
-  }, [setModalOpen]);
+  const balance = useCurrencyBalance(
+    account ?? undefined,
+    currency ?? undefined,
+  );
+  const usdValue = useUSDCPrice(currency ?? undefined);
 
   return (
     <Box
@@ -99,7 +101,7 @@ const CurrencyInput: React.FC<CurrencyInputProps> = ({
           {t('balance')}: {balance?.toSignificant(5)}
         </small>
         <small className='text-secondary'>
-          ${usdValue?.toSignificant()?.toLocaleString()}
+          ${usdValue?.toSignificant(5)?.toLocaleString()}
         </small>
       </Box>
       {modalOpen && (
