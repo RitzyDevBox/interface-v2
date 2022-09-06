@@ -14,6 +14,7 @@ const VersionToggle: React.FC = () => {
 
   useEffect(() => {
     updateIsV3(version === 'v3');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [version]);
 
   return (
@@ -21,7 +22,12 @@ const VersionToggle: React.FC = () => {
       <Box
         className={!isV3 ? 'version-toggle-active' : ''}
         onClick={() => {
-          history.push(history.location.pathname.replace('/v3', ''));
+          history.push(
+            history.location.pathname.replace(
+              '/v3',
+              history.location.pathname.includes('/analytics') ? '/v2' : '',
+            ),
+          );
         }}
       >
         <small>{t('V2')}</small>

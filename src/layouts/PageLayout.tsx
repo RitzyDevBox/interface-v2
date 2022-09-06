@@ -32,7 +32,7 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, name }) => {
   useEffect(() => {
     if (
       window.location.host !== 'quickswap.exchange' &&
-      // window.location.host !== 'v3.quickswap.exchange' &&
+      window.location.host !== 'beta.quickswap.exchange' &&
       window.location.host !== 'localhost:3000'
     ) {
       setOpenPassModal(true);
@@ -65,10 +65,12 @@ const PageLayout: React.FC<PageLayoutProps> = ({ children, name }) => {
     );
   };
 
+  const showBetaBanner = true;
+
   return (
     <Box className='page'>
       {openPassModal && <PasswordModal />}
-      <BetaWarningBanner />
+      {showBetaBanner && <BetaWarningBanner />}
       <Header />
       {!isProMode && <Background fallback={false} />}
       <Box className={getPageWrapperClassName()}>{children}</Box>

@@ -44,23 +44,36 @@ import { useIsExpertMode, useUserSlippageTolerance } from 'state/user/hooks';
 import { JSBI } from '@uniswap/sdk';
 import { currencyId } from 'utils/v3/currencyId';
 import { Box, Button } from '@material-ui/core';
+import useParsedQueryString from 'hooks/useParsedQueryString';
+import { SettingsModal } from 'components';
+import { ReactComponent as SettingsIcon } from 'assets/images/SettingsIcon.svg';
 
 export function SupplyLiquidityV3() {
   const params: any = useParams();
+  const parsedQuery = useParsedQueryString();
   const currencyIdAParam =
     params && params.currencyIdA
       ? params.currencyIdA.toLowerCase() === 'matic' ||
         params.currencyIdA.toLowerCase() === 'eth'
         ? 'matic'
         : params.currencyIdA
+      : parsedQuery && parsedQuery.currency0
+      ? (parsedQuery.currency0 as string).toLowerCase() === 'eth' ||
+        (parsedQuery.currency0 as string).toLowerCase() === 'matic'
+        ? 'matic'
+        : (parsedQuery.currency0 as string)
       : undefined;
-
   const currencyIdBParam =
     params && params.currencyIdB
       ? params.currencyIdB.toLowerCase() === 'matic' ||
         params.currencyIdB.toLowerCase() === 'eth'
         ? 'matic'
         : params.currencyIdB
+      : parsedQuery && parsedQuery.currency1
+      ? (parsedQuery.currency1 as string).toLowerCase() === 'eth' ||
+        (parsedQuery.currency1 as string).toLowerCase() === 'matic'
+        ? 'matic'
+        : (parsedQuery.currency1 as string)
       : undefined;
 
   const [currencyIdA, setCurrencyIdA] = useState(currencyIdAParam);
@@ -79,6 +92,7 @@ export function SupplyLiquidityV3() {
   const expertMode = useIsExpertMode();
 
   const [priceFormat, setPriceFormat] = useState(PriceFormats.TOKEN);
+  const [openSettingsModal, setOpenSettingsModal] = useState(false);
 
   useEffect(() => {
     onFieldAInput('');
@@ -312,21 +326,22 @@ export function SupplyLiquidityV3() {
   }, [allowedSlippage]);
 
   const hidePriceFormatter = useMemo(() => {
-    if (stepInitialPrice && currentStep < 2) {
-      return false;
-    }
+    return true;
+    // if (stepInitialPrice && currentStep < 2) {
+    //   return false;
+    // }
 
-    if (!stepInitialPrice && currentStep < 1) {
-      return false;
-    }
+    // if (!stepInitialPrice && currentStep < 1) {
+    //   return false;
+    // }
 
-    return Boolean(
-      (mintInfo.noLiquidity ? stepInitialPrice : stepPair) &&
-        !initialUSDPrices.CURRENCY_A &&
-        !initialUSDPrices.CURRENCY_B &&
-        !usdPriceA &&
-        !usdPriceB,
-    );
+    // return Boolean(
+    //   (mintInfo.noLiquidity ? stepInitialPrice : stepPair) &&
+    //     !initialUSDPrices.CURRENCY_A &&
+    //     !initialUSDPrices.CURRENCY_B &&
+    //     !usdPriceA &&
+    //     !usdPriceB,
+    // );
   }, [
     mintInfo,
     currentStep,
@@ -384,9 +399,15 @@ export function SupplyLiquidityV3() {
 
   return (
     <Box>
-      <Box className='flex justify-between'>
+      {openSettingsModal && (
+        <SettingsModal
+          open={openSettingsModal}
+          onClose={() => setOpenSettingsModal(false)}
+        />
+      )}
+      <Box className='flex justify-between items-center'>
         <p className='weight-600'>Supply Liquidity</p>
-        <div className='ml-a mxs_ml-0 mxs_mt-1 f f-ac '>
+        <Box className='flex items-center'>
           <small
             className='cursor-pointer text-primary'
             onClick={() => {
@@ -407,10 +428,10 @@ export function SupplyLiquidityV3() {
               />
             </Box>
           )}
-          {/*
-                            TODO: Support settings 
-                            <SettingsTab placeholderSlippage={allowedSlippagePercent} /> */}
-        </div>
+          <Box className='flex cursor-pointer'>
+            <SettingsIcon onClick={() => setOpenSettingsModal(true)} />
+          </Box>
+        </Box>
       </Box>
       <Box mt={2}>
         {account ? (
@@ -444,9 +465,7 @@ export function SupplyLiquidityV3() {
               currencyA={baseCurrency ?? undefined}
               currencyB={currencyB ?? undefined}
               mintInfo={mintInfo}
-              isCompleted={stepInitialPrice}
               priceFormat={priceFormat}
-              backStep={0}
             />
           </Box>
         )}
@@ -454,11 +473,7 @@ export function SupplyLiquidityV3() {
           currencyA={baseCurrency}
           currencyB={quoteCurrency}
           mintInfo={mintInfo}
-          disabled={!stepPair}
-          isCompleted={stepRange}
-          additionalStep={stepInitialPrice}
           priceFormat={priceFormat}
-          backStep={stepInitialPrice ? 1 : 0}
         />
         <Box mt={4}>
           <EnterAmounts

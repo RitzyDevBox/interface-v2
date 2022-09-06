@@ -1,21 +1,12 @@
 import React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowRight, Check, CheckCircle, Frown, X } from 'react-feather';
+import { ArrowRight, CheckCircle, Frown, X } from 'react-feather';
 import { useFarmingSubgraph } from '../../hooks/useIncentiveSubgraph';
 import { useFarmingHandlers } from '../../hooks/useStakerHandlers';
 import { useAllTransactions } from '../../state/transactions/hooks';
 import { useChunkedRows } from '../../utils/chunkForRows';
 import Loader from '../Loader';
 import { FarmingType } from '../../models/enums';
-import {
-  NFTPosition,
-  NFTPositionDescription,
-  NFTPositionIcon,
-  NFTPositionIndex,
-  NFTPositionLink,
-  NFTPositionSelectCircle,
-  NFTPositionsRow,
-} from './styled';
 import { useSortedRecentTransactions } from '../../hooks/useSortedRecentTransactions';
 import { NTFInterface } from '../../models/interfaces';
 import { NavLink } from 'react-router-dom';
@@ -32,7 +23,9 @@ import { Token } from '@uniswap/sdk-core';
 import { formatUnits, parseUnits } from 'ethers/lib/utils';
 import { BigNumber } from 'ethers';
 import { ChainId } from '@uniswap/sdk';
-import { Box } from '@material-ui/core';
+import { Box, Button } from '@material-ui/core';
+import { Skeleton } from '@material-ui/lab';
+import { Check } from '@material-ui/icons';
 import { StyledCircle, StyledLabel } from 'components/v3/Common/styledElements';
 
 interface FarmModalProps {
@@ -131,7 +124,6 @@ export function FarmModal({
     any[][] | null | undefined
   >(null);
 
-  //TODO
   const _chunked = useChunkedRows(positionsForStake, 1000);
 
   const [submitState, setSubmitState] = useState(0);
@@ -360,10 +352,10 @@ export function FarmModal({
   const showApproval =
     approval !== ApprovalState.APPROVED && !!_amountForApprove;
 
-  const linkToProviding = `/add/${pool.token0.id}/${pool.token1.id}`;
+  const linkToProviding = `/add/${pool.token0.id}/${pool.token1.id}/v3`;
 
   return (
-    <>
+    <Box padding='20px 16px'>
       {submitState === 3 ? (
         <div className={'w-100 p-1 c-w cur-d'}>
           <div className={'f f-je mb-1 w-100'}>
@@ -383,12 +375,12 @@ export function FarmModal({
           <Loader stroke={'var(--white)'} size={'25px'} />
         </div>
       ) : (
-        <div className={`w-100 c-w ${!isTierFarming && 'h-400 pos-r'}`}>
+        <div className='v3-farm-stake-modal-wrapper'>
           <div className={'mb-1 flex-s-between'}>
-            <div>Select NFT for farming</div>
-            <button className={'bg-t br-0'} onClick={closeHandler}>
+            <h6 className='weight-600'>Select NFT for farming</h6>
+            <Box className='cursor-pointer' onClick={closeHandler}>
               <X size={18} stroke={'var(--white)'} />
-            </button>
+            </Box>
           </div>
           {isTierFarming && chunkedPositions && chunkedPositions.length !== 0 && (
             <FarmModalFarmingTiers
@@ -414,15 +406,7 @@ export function FarmModal({
               >{`2. Select a Position`}</span>
             </div>
           )}
-          <div
-            style={{
-              height: 'unset',
-              marginLeft: '-1rem',
-              position: 'relative',
-              marginRight: '-1rem',
-            }}
-            className='mb-1 pl-1 pr-1'
-          >
+          <Box mb={2}>
             {chunkedPositions && chunkedPositions.length === 0 ? (
               <div className={`f c f-ac f-jc`}>
                 <Frown size={30} stroke={'var(--white)'} />
@@ -440,19 +424,22 @@ export function FarmModal({
               </div>
             ) : chunkedPositions && chunkedPositions.length !== 0 ? (
               chunkedPositions.map((row, i, arr) => (
-                <div
+                <Box
                   style={{
                     opacity:
                       !isEnoughTokenForLock && selectedTier ? '0.5' : '1',
                   }}
-                  className='f mb-1 pl-1 pb-1 pr-1 mxs_pb-0 farm-modal__nft-position-row'
+                  className='flex flex-wrap'
                   key={i}
                 >
                   {row.map((el, j) => (
-                    <div
-                      className={'farm-modal__nft-position p-1 br-8 c-w'}
+                    <Box
+                      className={`v3-farm-stake-modal-position${
+                        selectedNFT?.id === el.id
+                          ? ' v3-farm-stake-modal-position-selected'
+                          : ''
+                      }`}
                       key={j}
-                      data-selected={!!selectedNFT && selectedNFT.id === el.id}
                       onClick={(e: any) => {
                         if (!isEnoughTokenForLock && selectedTier) return;
                         if (e.target.tagName !== 'A' && !submitLoader) {
@@ -471,134 +458,122 @@ export function FarmModal({
                         <Box mr={2}>
                           <StyledCircle>{el.id}</StyledCircle>
                         </Box>
-                        <Box className='flex-col' ml={0.5} mr={5}>
-                          <Box>
+                        <Box className='flex-col' ml={0.5}>
+                          <Box mb='4px'>
                             <IsActive el={el} />
                           </Box>
 
-                          <StyledLabel color='#ebecf2' fontSize='14px'>
-                            <a
-                              style={{ textDecoration: 'underline' }}
-                              className={'c-w fs-075'}
-                              href={`/#/pool/${+el.id}?onFarming=true`}
-                              rel='noopener noreferrer'
-                              target='_blank'
-                            >
-                              View position
-                            </a>
-                          </StyledLabel>
+                          <a
+                            href={`/#/pool/${+el.id}?onFarming=true`}
+                            rel='noopener noreferrer'
+                            target='_blank'
+                          >
+                            <small>View position</small>
+                          </a>
                         </Box>
                       </Box>
-                    </div>
+                      <Box
+                        className={`v3-farm-stake-position-check ${
+                          selectedNFT?.id === el.id
+                            ? 'v3-farm-stake-position-checked'
+                            : 'v3-farm-stake-position-unchecked'
+                        }`}
+                      >
+                        {selectedNFT?.id === el.id && <Check />}
+                      </Box>
+                    </Box>
                   ))}
-                </div>
+                </Box>
               ))
             ) : (
-              <NFTPositionsRow>
+              <Box className='flex'>
                 {[0, 1, 2].map((el, i) => (
-                  <NFTPosition key={i} skeleton>
-                    <NFTPositionIcon skeleton />
-                    <NFTPositionDescription skeleton>
-                      <NFTPositionIndex skeleton />
-                      <NFTPositionLink skeleton />
-                    </NFTPositionDescription>
-                    <NFTPositionSelectCircle />
-                  </NFTPosition>
+                  <Box
+                    padding='8px'
+                    borderRadius={12}
+                    mr={1}
+                    position='relative'
+                    className='flex items-center border'
+                    key={i}
+                  >
+                    <Skeleton variant='circle' width='40px' height='40px' />
+                    <Box ml={1}>
+                      <Skeleton width={50} height={16} />
+                      <Skeleton width={60} height={20} />
+                    </Box>
+                  </Box>
                 ))}
-              </NFTPositionsRow>
+              </Box>
             )}
-          </div>
+          </Box>
           {selectedTier === '' &&
           chunkedPositions &&
           chunkedPositions.length !== 0 ? (
-            <button
-              disabled
-              id={'farming-select-tier'}
-              className={'btn primary w-100 p-1 farming-select-tier'}
-            >
-              Select Tier
-            </button>
+            <Button disabled>Select Tier</Button>
           ) : selectedTier &&
             !isEnoughTokenForLock &&
             chunkedPositions &&
             chunkedPositions.length !== 0 ? (
-            <button
-              disabled
-              className='btn primary w-100 p-1'
-            >{`Not enough ${multiplierToken.symbol}`}</button>
+            <Button disabled>{`Not enough ${multiplierToken.symbol}`}</Button>
           ) : selectedNFT ? (
-            <div
-              className={`f mxs_fd-c w-100 ${!isTierFarming &&
-                'pos-a bottom-0'}`}
-            >
+            <Box className='flex justify-between'>
               {selectedTier && (
-                <button
-                  disabled={!showApproval || !selectedTier}
-                  onClick={approveCallback}
-                  id={'farming-approve-algb'}
-                  className={
-                    'btn primary w-100 mr-1 mxs_mr-0 p-1 mxs_mb-1 farming-approve-algb'
-                  }
-                >
-                  {approval === ApprovalState.PENDING ? (
-                    <span className={'f f-ac f-jc'}>
-                      <Loader stroke={'white'} />
-                      <span className={'ml-05'}>Approving</span>
-                    </span>
-                  ) : !showApproval ? (
-                    `${multiplierToken.symbol} Approved`
-                  ) : (
-                    `Approve ${multiplierToken.symbol}`
-                  )}
-                </button>
+                <Box width='32%'>
+                  <Button
+                    disabled={!showApproval || !selectedTier}
+                    onClick={approveCallback}
+                  >
+                    {approval === ApprovalState.PENDING ? (
+                      <Box className='flex items-center'>
+                        <Loader stroke={'white'} />
+                        <div className={'ml-05'}>Approving</div>
+                      </Box>
+                    ) : !showApproval ? (
+                      `${multiplierToken.symbol} Approved`
+                    ) : (
+                      `Approve ${multiplierToken.symbol}`
+                    )}
+                  </Button>
+                </Box>
               )}
-              <button
-                disabled={submitLoader || !NFTsForApprove}
-                onClick={approveNFTs}
-                id={'farming-approve-nft'}
-                className={
-                  'btn primary w-100 mr-1 mxs_mr-0 mxs_mb-1 p-1 farming-approve-nft'
-                }
-              >
-                {submitLoader && submitState === 0 ? (
-                  <span className={'f f-ac f-jc'}>
-                    <Loader stroke={'white'} />
-                    <span className={'ml-05'}>Approving</span>
-                  </span>
-                ) : NFTsForStake && !NFTsForApprove ? (
-                  `Position Approved`
-                ) : (
-                  `Approve Position`
-                )}
-              </button>
-              <button
-                disabled={submitLoader || !NFTsForStake}
-                onClick={() => farmNFTs(farmingType)}
-                id={'farming-deposit-nft'}
-                className={'btn primary w-100 mxs_mb-1 p-1 farming-deposit-nft'}
-              >
-                {submitLoader && submitState === 2 ? (
-                  <span className={'f f-ac f-jc'}>
-                    <Loader stroke={'white'} />
-                    <span className={'ml-05'}>Depositing</span>
-                  </span>
-                ) : (
-                  `Deposit`
-                )}
-              </button>
-            </div>
+              <Box width={selectedTier ? '32%' : '49%'}>
+                <Button
+                  disabled={submitLoader || !NFTsForApprove}
+                  onClick={approveNFTs}
+                >
+                  {submitLoader && submitState === 0 ? (
+                    <Box className='flex items-center'>
+                      <Loader stroke={'white'} />
+                      <div className={'ml-05'}>Approving</div>
+                    </Box>
+                  ) : NFTsForStake && !NFTsForApprove ? (
+                    `Position Approved`
+                  ) : (
+                    `Approve Position`
+                  )}
+                </Button>
+              </Box>
+              <Box width={selectedTier ? '32%' : '49%'}>
+                <Button
+                  disabled={submitLoader || !NFTsForStake}
+                  onClick={() => farmNFTs(farmingType)}
+                >
+                  {submitLoader && submitState === 2 ? (
+                    <Box className='flex items-center'>
+                      <Loader stroke={'white'} />
+                      <div className={'ml-05'}>Depositing</div>
+                    </Box>
+                  ) : (
+                    `Deposit`
+                  )}
+                </Button>
+              </Box>
+            </Box>
           ) : chunkedPositions && chunkedPositions.length !== 0 ? (
-            <button
-              disabled
-              id={'farming-select-nft'}
-              className={`btn primary w-100 p-1 farming-select-nft ${!isTierFarming &&
-                'pos-a bottom-0'}`}
-            >
-              Select Position
-            </button>
+            <Button disabled>Select Position</Button>
           ) : null}
         </div>
       )}
-    </>
+    </Box>
   );
 }

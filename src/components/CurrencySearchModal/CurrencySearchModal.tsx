@@ -66,29 +66,23 @@ const CurrencySearchModal: React.FC<CurrencySearchModalProps> = ({
     });
     setListView(true);
   }, []);
-  const handleClickBack = useCallback(() => {
-    ReactGA.event({
-      category: 'Lists',
-      action: 'Back',
-    });
-    setListView(false);
-  }, []);
 
   return (
-    <CustomModal open={isOpen} onClose={onDismiss}>
-      {listView ? (
-        <ListSelect onDismiss={onDismiss} onBack={handleClickBack} />
-      ) : (
-        <CurrencySearch
-          isOpen={isOpen}
-          onDismiss={onDismiss}
-          onCurrencySelect={handleCurrencySelect}
-          onChangeList={handleClickChangeList}
-          selectedCurrency={selectedCurrency}
-          otherSelectedCurrency={otherSelectedCurrency}
-          showCommonBases={showCommonBases}
-        />
-      )}
+    <CustomModal
+      open={isOpen}
+      onClose={onDismiss}
+      modalWrapper={'searchModalWrapper'}
+      hideBackdrop={true}
+    >
+      <CurrencySearch
+        isOpen={isOpen}
+        onDismiss={onDismiss}
+        onCurrencySelect={handleCurrencySelect}
+        onChangeList={handleClickChangeList}
+        selectedCurrency={selectedCurrency}
+        otherSelectedCurrency={otherSelectedCurrency}
+        showCommonBases={showCommonBases}
+      />
     </CustomModal>
   );
 };

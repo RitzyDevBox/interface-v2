@@ -25,7 +25,7 @@ export default function Farms() {
       link: 'my-farms',
     },
     {
-      text: t('Enternal Farms'),
+      text: t('Eternal Farms'),
       id: 1,
       link: 'eternal-farms',
     },
@@ -58,23 +58,14 @@ export default function Farms() {
   } = useFarmingSubgraph() || {};
 
   const {
-    fetchRewards: { rewardsResult, fetchRewardsFn, rewardsLoading },
-    fetchAllEvents: { fetchAllEventsFn, allEvents, allEventsLoading },
     fetchTransferredPositions: {
       fetchTransferredPositionsFn,
       transferredPositions,
       transferredPositionsLoading,
     },
-    fetchHasTransferredPositions: {
-      fetchHasTransferredPositionsFn,
-      hasTransferredPositions,
-      hasTransferredPositionsLoading,
-    },
   } = useFarmingSubgraph() || {};
 
   const [now, setNow] = useState(Date.now());
-
-  console.log(' farms data ', { eternalFarms, transferredPositions });
 
   return (
     <Box className='bg-palette' borderRadius={10}>

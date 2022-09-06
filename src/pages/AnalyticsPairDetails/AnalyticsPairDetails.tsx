@@ -35,6 +35,7 @@ const AnalyticsPairDetails: React.FC = () => {
   const match = useRouteMatch<{ id: string }>();
   const pairAddress = match.params.id;
   const tokenMap = useSelectedTokenList();
+  const [dataLoading, setDataLoading] = useState(false);
   const [pairData, setPairData] = useState<any>(null);
   const [pairTransactions, setPairTransactions] = useState<any>(null);
 
@@ -90,10 +91,12 @@ const AnalyticsPairDetails: React.FC = () => {
     : undefined;
 
   const token0Rate = isV3
-    ? pairData && pairData.token0Price
-      ? Number(pairData.token0Price) >= 0.0001
-        ? Number(pairData.token0Price).toFixed(
-            Number(pairData.token0Price) > 1 ? 2 : 4,
+    ? // According to the graph Token1Price is the number of token 1s per token 0
+      // So we need to invert these
+      pairData && pairData.token1Price
+      ? Number(pairData.token1Price) >= 0.0001
+        ? Number(pairData.token1Price).toFixed(
+            Number(pairData.token1Price) > 1 ? 2 : 4,
           )
         : '< 0.0001'
       : '-'
@@ -105,11 +108,13 @@ const AnalyticsPairDetails: React.FC = () => {
       : '< 0.0001'
     : '-';
 
+  // According to the graph Token0Price is the number of token 0's per token 1
+  // So we need to invert these
   const token1Rate = isV3
-    ? pairData && pairData.token1Price
-      ? Number(pairData.token1Price) >= 0.0001
-        ? Number(pairData.token1Price).toFixed(
-            Number(pairData.token1Price) > 1 ? 2 : 4,
+    ? pairData && pairData.token0Price
+      ? Number(pairData.token0Price) >= 0.0001
+        ? Number(pairData.token0Price).toFixed(
+            Number(pairData.token0Price) > 1 ? 2 : 4,
           )
         : '< 0.0001'
       : '-'
@@ -141,20 +146,31 @@ const AnalyticsPairDetails: React.FC = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
+    setDataLoading(true);
     setPairData(null);
     setPairTransactions(null);
 
-    async function checkEthPrice() {
-      if (ethPrice.price) {
-        const pairInfoFn = isV3
-          ? getPairInfoV3(pairAddress)
-          : getBulkPairData([pairAddress], ethPrice.price);
-
-        pairInfoFn.then((pairInfo: any) => {
+    async function fetchPairData() {
+      try {
+        if (isV3) {
+          const pairInfo = await getPairInfoV3(pairAddress);
           if (pairInfo && pairInfo.length > 0) {
             setPairData(pairInfo[0]);
           }
-        });
+        } else {
+          if (ethPrice.price) {
+            const pairInfo = await getBulkPairData(
+              [pairAddress],
+              ethPrice.price,
+            );
+            if (pairInfo && pairInfo.length > 0) {
+              setPairData(pairInfo[0]);
+            }
+          }
+        }
+        setDataLoading(false);
+      } catch (e) {
+        setDataLoading(false);
       }
     }
     async function fetchTransctions() {
@@ -168,8 +184,10 @@ const AnalyticsPairDetails: React.FC = () => {
         }
       });
     }
-    checkEthPrice();
-    fetchTransctions();
+    if (isV3 !== undefined) {
+      fetchPairData();
+      fetchTransctions();
+    }
   }, [pairAddress, ethPrice.price, isV3]);
 
   useEffect(() => {
@@ -336,7 +354,7 @@ const AnalyticsPairDetails: React.FC = () => {
 
   return (
     <>
-      <AnalyticsHeader type='pair' data={pairData} />
+      <AnalyticsHeader type='pair' data={pairData} address={pairAddress} />
       {pairData ? (
         <>
           <Box width={1} className='flex flex-wrap justify-between'>
@@ -397,7 +415,9 @@ const AnalyticsPairDetails: React.FC = () => {
                 mr={1.5}
                 onClick={() => {
                   history.push(
-                    `/pools?currency0=${pairData.token0.id}&currency1=${pairData.token1.id}`,
+                    `/pools${isV3 ? '/v3' : ''}?currency0=${
+                      pairData.token0.id
+                    }&currency1=${pairData.token1.id}`,
                   );
                 }}
               >
@@ -407,7 +427,9 @@ const AnalyticsPairDetails: React.FC = () => {
                 className='button filledButton'
                 onClick={() => {
                   history.push(
-                    `/swap?currency0=${pairData.token0.id}&currency1=${pairData.token1.id}`,
+                    `/swap${isV3 ? '/v3' : ''}?currency0=${
+                      pairData.token0.id
+                    }&currency1=${pairData.token1.id}`,
                   );
                 }}
               >
@@ -427,8 +449,12 @@ const AnalyticsPairDetails: React.FC = () => {
             )}
           </Box>
         </>
-      ) : (
+      ) : dataLoading ? (
         <Skeleton width='100%' height={100} />
+      ) : (
+        <Box py={4}>
+          <h5>This pair does not exist</h5>
+        </Box>
       )}
     </>
   );

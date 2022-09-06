@@ -1,19 +1,5 @@
 @use 'styles/variables' as *;
 
-.modalWrapper {
-  margin: 0px;
-  padding: 0px;
-  max-width: 500px;
-  width: 100%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 20px;
-  transform: translate(-50%, -50%);
-  outline: none;
-  background-color: $bgPalette;
-}
-
 .customModalBackdrop {
   backdrop-filter: blur(9.9px);
   background-color: $bgColor;
@@ -24,7 +10,24 @@
   padding: 0px;
   max-width: 750px;
   max-height: 90vh;
-  overflow-y: scroll;
+  overflow-y: auto;
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border-radius: 20px;
+  transform: translate(-50%, -50%);
+  outline: none;
+  background-color: $bgPalette;
+}
+
+.searchModalWrapper {
+  margin: 0px;
+  padding: 0px;
+  max-width: 750px;
+  max-height: 90vh;
+  // causes the modal to be non-responsive
+  // overflow-y: auto;
   width: 100%;
   position: absolute;
   top: 50%;

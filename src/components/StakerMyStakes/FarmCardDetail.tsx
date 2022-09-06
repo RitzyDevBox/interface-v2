@@ -1,86 +1,105 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Box } from '@material-ui/core';
-import { CurrencyLogo, DoubleCurrencyLogo, Logo } from 'components';
+import { CurrencyLogo } from 'components';
 import {
   StyledButton,
-  StyledCircle,
   StyledDarkBox,
   StyledFilledBox,
-  StyledLabel,
 } from 'components/v3/Common/styledElements';
 import { useFarmingHandlers } from 'hooks/useStakerHandlers';
 import { FarmingType } from 'models/enums';
 import Loader from 'components/Loader';
 import { formatReward } from 'utils/formatReward';
 import { Token } from '@uniswap/sdk';
+import { useV3StakeData } from 'state/farms/hooks';
 
 interface FarmCardDetailProps {
   el: any;
-  setGettingReward: any;
-  claimRewardsHandler: any;
-  setEternalCollectReward: any;
-  eternalCollectReward: any;
-  eternalCollectRewardHandler: any;
-  gettingReward: any;
 }
 
-export default function FarmCardDetail({
-  el,
-  setGettingReward,
-  setEternalCollectReward,
-  eternalCollectReward,
-  gettingReward,
-  claimRewardsHandler,
-  eternalCollectRewardHandler,
-}: FarmCardDetailProps) {
+export default function FarmCardDetail({ el }: FarmCardDetailProps) {
   const rewardToken = el.eternalRewardToken;
   const earned = el.eternalEarned;
   const bonusEarned = el.eternalBonusEarned;
   const bonusRewardToken = el.eternalBonusRewardToken;
+
+  const { v3Stake } = useV3StakeData();
+  const { txType, selectedTokenId, txConfirmed, txError, selectedFarmingType } =
+    v3Stake ?? {};
+
+  const { eternalCollectRewardHandler, withdrawHandler, claimRewardsHandler } =
+    useFarmingHandlers() || {};
 
   return (
     <Box
       className='flex justify-evenly items-center flex-wrap'
       marginBottom={2}
     >
-      <StyledDarkBox className='flex-col' width='48%' height={220}>
-        <Box padding={1.5}>
-          <StyledLabel fontSize='16px' color='#c7cad9'>
-            Infinite Farming
-          </StyledLabel>
+      <StyledDarkBox padding={1.5} width={1} height={220}>
+        <Box>
+          <p>Eternal Farming</p>
         </Box>
         {!el.eternalFarming && (
-          <Box className='flex justify-center items-center' height='60%'>
-            <StyledLabel color='#696c80' fontSize='14px'>
-              No infinite farms for now
-            </StyledLabel>
-          </Box>
+          <>
+            <Box className='flex justify-center items-center' height='130px'>
+              <small className='text-secondary'>No Eternal farms for now</small>
+            </Box>
+            <StyledButton
+              height='40px'
+              width='100%'
+              disabled={
+                selectedTokenId === el.id &&
+                txType === 'withdraw' &&
+                !txConfirmed &&
+                !txError
+              }
+              onClick={() => {
+                withdrawHandler(el.id);
+              }}
+            >
+              {selectedTokenId === el.id &&
+              txType === 'withdraw' &&
+              !txConfirmed &&
+              !txError ? (
+                <>
+                  <Loader size={'1rem'} stroke={'var(--white)'} />
+                  <Box ml='5px'>
+                    <small>Withdrawing</small>
+                  </Box>
+                </>
+              ) : (
+                <>
+                  <small>Withdraw</small>
+                </>
+              )}
+            </StyledButton>
+          </>
         )}
         {el.eternalFarming && (
           <>
-            <StyledFilledBox
-              className='flex flex-col  justify-around  items-center'
-              height={91}
-            >
-              <Box width='90%' className='flex justify-between'>
-                <StyledLabel>Ended rewards</StyledLabel>
-                {bonusRewardToken && <StyledLabel>Ended bonus</StyledLabel>}
+            <StyledFilledBox mt={2} p={2}>
+              <Box width={1} className='flex justify-between'>
+                <small className='text-secondary'>Earned rewards</small>
+                {bonusRewardToken && (
+                  <small className='text-secondary'>Earned bonus</small>
+                )}
               </Box>
-              <Box width='90%' className='flex justify-between'>
+              <Box mt={1} width={1} className='flex justify-between'>
                 <Box className='flex items-center'>
                   <CurrencyLogo
-                    size={'30px'}
+                    size={'24px'}
                     currency={
                       new Token(137, rewardToken.id, 18, rewardToken.symbol)
                     }
-                  />{' '}
-                  {`${formatReward(earned)} ${rewardToken.symbol}`}
+                  />
+                  <Box ml='6px'>
+                    <p>{`${formatReward(earned)} ${rewardToken.symbol}`}</p>
+                  </Box>
                 </Box>
                 {bonusRewardToken && (
                   <Box className='flex items-center'>
-                    {' '}
                     <CurrencyLogo
-                      size={'30px'}
+                      size={'24px'}
                       currency={
                         new Token(
                           137,
@@ -90,92 +109,77 @@ export default function FarmCardDetail({
                         )
                       }
                     />
-                    {` ${formatReward(bonusEarned)} ${bonusRewardToken.symbol}`}
+                    <Box ml='6px'>
+                      <p>{`${formatReward(bonusEarned)} ${
+                        bonusRewardToken.symbol
+                      }`}</p>
+                    </Box>
                   </Box>
                 )}
               </Box>
             </StyledFilledBox>
 
-            <Box marginTop={2} className='flex justify-center items-center'>
+            <Box marginTop={2} className='flex justify-between items-center'>
               <StyledButton
                 height='40px'
-                width='48%'
+                width='49%'
                 disabled={
-                  (eternalCollectReward.id === el.id &&
-                    eternalCollectReward.state !== 'done') ||
+                  (selectedTokenId === el.id &&
+                    txType === 'eternalCollectReward' &&
+                    !txConfirmed &&
+                    !txError) ||
                   (el.eternalEarned == 0 && el.eternalBonusEarned == 0)
                 }
                 onClick={() => {
-                  setEternalCollectReward({
-                    id: el.id,
-                    state: 'pending',
-                  });
                   eternalCollectRewardHandler(el.id, { ...el });
                 }}
               >
-                {eternalCollectReward &&
-                eternalCollectReward.id === el.id &&
-                eternalCollectReward.state !== 'done' ? (
+                {selectedTokenId === el.id &&
+                txType === 'eternalCollectReward' &&
+                !txConfirmed &&
+                !txError ? (
                   <>
                     <Loader size={'18px'} stroke={'var(--white)'} />
-                    <StyledLabel color='#ebecf2' fontSize='14px'>
-                      {' Claiming'}
-                    </StyledLabel>
+                    <Box ml='5px'>
+                      <small>{'Claiming'}</small>
+                    </Box>
                   </>
                 ) : (
-                  <StyledLabel color='#ebecf2' fontSize='14px'>
-                    Claim
-                  </StyledLabel>
+                  <small>Claim</small>
                 )}
               </StyledButton>
               <StyledButton
                 height='40px'
-                width='48%'
+                width='49%'
                 disabled={
-                  gettingReward.id === el.id &&
-                  gettingReward.farmingType === FarmingType.ETERNAL &&
-                  gettingReward.state !== 'done'
+                  selectedTokenId === el.id &&
+                  selectedFarmingType === FarmingType.ETERNAL &&
+                  txType === 'claimRewards' &&
+                  !txConfirmed &&
+                  !txError
                 }
                 onClick={() => {
-                  setGettingReward({
-                    id: el.id,
-                    state: 'pending',
-                    farmingType: FarmingType.ETERNAL,
-                  });
                   claimRewardsHandler(el.id, { ...el }, FarmingType.ETERNAL);
                 }}
               >
-                {gettingReward &&
-                gettingReward.id === el.id &&
-                gettingReward.farmingType === FarmingType.ETERNAL &&
-                gettingReward.state !== 'done' ? (
+                {selectedTokenId === el.id &&
+                selectedFarmingType === FarmingType.ETERNAL &&
+                txType === 'claimRewards' &&
+                !txConfirmed &&
+                !txError ? (
                   <>
                     <Loader size={'18px'} stroke={'var(--white)'} />
-                    <StyledLabel color='#ebecf2' fontSize='14px'>
-                      {' Undepositing'}
-                    </StyledLabel>
+                    <Box ml='5px'>
+                      <small>{' Undepositing'}</small>
+                    </Box>
                   </>
                 ) : (
-                  <StyledLabel color='#ebecf2' fontSize='14px'>
-                    Undeposit
-                  </StyledLabel>
+                  <small>Undeposit</small>
                 )}
               </StyledButton>
             </Box>
           </>
         )}
-      </StyledDarkBox>
-      <StyledDarkBox className='flex-col' width='48%' height={220}>
-        <Box padding={1.5}>
-          <StyledLabel fontSize='16px' color='#c7cad9'>
-            Limit Farming
-          </StyledLabel>
-        </Box>
-        <Box className='flex justify-center items-center' height='60%'>
-          <StyledLabel color='#696c80' fontSize='14px'>
-            No Limit farms for now
-          </StyledLabel>
-        </Box>
       </StyledDarkBox>
     </Box>
   );

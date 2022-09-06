@@ -44,16 +44,11 @@ import {
   TokenSubgraph,
 } from '../models/interfaces';
 import { Aprs, FutureFarmingEvent } from '../models/interfaces';
-import {
-  fetchEternalFarmAPR,
-  fetchLimitFarmAPR,
-  fetchLimitFarmTVL,
-} from 'utils/api';
-import { useEthPrices } from './useEthPrices';
+import { fetchEternalFarmAPR, fetchEternalFarmTVL } from 'utils/api';
 
 export function useFarmingSubgraph() {
   const { chainId, account, library } = useActiveWeb3React();
-  const { v3Client, farmingClient, oldFarmingClient } = useClients();
+  const { v3Client, farmingClient } = useClients();
 
   const [positionsForPool, setPositionsForPool] = useState<Position[] | null>(
     null,
@@ -90,12 +85,6 @@ export function useFarmingSubgraph() {
     false,
   );
 
-  const [allEvents, setAllEvents] = useState<{
-    currentEvents: FarmingEvent[];
-    futureEvents: FutureFarmingEvent[];
-  } | null>(null);
-  const [allEventsLoading, setAllEventsLoading] = useState<boolean>(false);
-
   const [positionsOnFarmer, setPositionsOnFarmer] = useState<{
     transferredPositionsIds: string[];
     oldTransferredPositionsIds: string[];
@@ -108,6 +97,16 @@ export function useFarmingSubgraph() {
     FormattedEternalFarming[] | null
   >(null);
   const [eternalFarmsLoading, setEternalFarmsLoading] = useState<boolean>(
+    false,
+  );
+
+  const [eternalFarmAprs, setEternalFarmAprs] = useState<Aprs | undefined>();
+  const [eternalFarmAprsLoading, setEternalFarmAprsLoading] = useState<boolean>(
+    false,
+  );
+
+  const [eternalFarmTvls, setEternalFarmTvls] = useState<any>();
+  const [eternalFarmTvlsLoading, setEternalFarmTvlsLoading] = useState<boolean>(
     false,
   );
 
@@ -243,7 +242,7 @@ export function useFarmingSubgraph() {
 
       return eternalFarmings[0];
     } catch (err) {
-      throw new Error('Fetch infinite farming ' + err.message);
+      throw new Error('Fetch eternal farming ' + err.message);
     }
   }
 
@@ -336,87 +335,6 @@ export function useFarmingSubgraph() {
       throw new Error('Future limit farmings fetching ' + err);
     } finally {
       setFutureEventsLoading(false);
-    }
-  }
-
-  async function fetchAllEvents(reload?: boolean) {
-    setAllEventsLoading(true);
-
-    try {
-      const {
-        data: { limitFarmings: currentEvents },
-        errors,
-      } = await farmingClient.query<SubgraphResponse<FarmingEvent[]>>({
-        query: CURRENT_EVENTS(),
-        fetchPolicy: reload ? 'network-only' : 'cache-first',
-        variables: {
-          startTime: Math.round(Date.now() / 1000),
-          endTime: Math.round(Date.now() / 1000),
-        },
-      });
-
-      if (errors) {
-        const error = errors[0];
-        throw new Error(`${error.name} ${error.message}`);
-      }
-
-      const {
-        data: { limitFarmings: futureEvents },
-        errors: _errors,
-      } = await farmingClient.query<SubgraphResponse<FutureFarmingEvent[]>>({
-        query: FUTURE_EVENTS(),
-        fetchPolicy: reload ? 'network-only' : 'cache-first',
-        variables: { timestamp: Math.round(Date.now() / 1000) },
-      });
-
-      if (_errors) {
-        const error = _errors[0];
-        throw new Error(`${error.name} ${error.message}`);
-      }
-
-      if (currentEvents.length === 0 && futureEvents.length === 0) {
-        setAllEvents({
-          currentEvents: [],
-          futureEvents: [],
-        });
-        setAllEventsLoading(false);
-        return;
-      }
-
-      const eventTVL = await fetchLimitFarmTVL();
-      const aprs: Aprs = await fetchLimitFarmAPR();
-
-      const price = 1;
-
-      const EVENT_LOCK = 100_000;
-
-      setAllEvents({
-        currentEvents: await getEvents(
-          currentEvents.map((el) => ({
-            ...el,
-            active: true,
-            apr: aprs[el.id] ? aprs[el.id] : 37,
-          })),
-          true,
-        ),
-        futureEvents: await getEvents(
-          futureEvents.map((el) => ({
-            ...el,
-            locked:
-              eventTVL[el.id] === undefined
-                ? false
-                : eventTVL[el.id] * price >= EVENT_LOCK,
-            apr: aprs[el.id] ? aprs[el.id] : 37,
-          })),
-          true,
-        ),
-      });
-
-      setAllEventsLoading(false);
-    } catch (err) {
-      throw new Error('Error while fetching current limit farmings ' + err);
-    } finally {
-      setAllEventsLoading(false);
     }
   }
 
@@ -792,7 +710,7 @@ export function useFarmingSubgraph() {
 
       setPositionsEternal(_positions);
     } catch (error) {
-      throw new Error('Infinite farms loading' + error.code + error.message);
+      throw new Error('Eternal farms loading' + error.code + error.message);
     }
   }
 
@@ -856,14 +774,6 @@ export function useFarmingSubgraph() {
         throw new Error(`${error.name} ${error.message}`);
       }
 
-      // const { data: { deposits: oldPositionsTransferred }, error: _error } = (await oldFarmingClient.query<SubgraphResponse<Deposit[]>>({
-      //     query: TRANSFERED_POSITIONS(false),
-      //     fetchPolicy: 'network-only',
-      //     variables: { account }
-      // }))
-
-      // if (_error) throw new Error(`${_error.name} ${_error.message}`)
-
       if (positionsTransferred.length === 0) {
         setPositionsOnFarmer({
           transferredPositionsIds: [],
@@ -886,6 +796,40 @@ export function useFarmingSubgraph() {
     } catch (err) {
       setPositionsOnFarmerLoading(false);
       throw new Error('Fetching positions on farmer ' + err);
+    }
+  }
+
+  async function fetchEternalFarmAprs() {
+    setEternalFarmAprsLoading(true);
+
+    try {
+      const aprs: Aprs = await fetchEternalFarmAPR();
+      setEternalFarmAprs(aprs);
+    } catch (err) {
+      if (err instanceof Error) {
+        throw new Error(
+          'Error while fetching eternal farms Aprs' + err.message,
+        );
+      }
+    } finally {
+      setEternalFarmAprsLoading(false);
+    }
+  }
+
+  async function fetchEternalFarmTvls() {
+    setEternalFarmTvlsLoading(true);
+
+    try {
+      const tvls = await fetchEternalFarmTVL();
+      setEternalFarmTvls(tvls);
+    } catch (err) {
+      if (err instanceof Error) {
+        throw new Error(
+          'Error while fetching eternal farms Tvls' + err.message,
+        );
+      }
+    } finally {
+      setEternalFarmTvlsLoading(false);
     }
   }
 
@@ -912,8 +856,6 @@ export function useFarmingSubgraph() {
         return;
       }
 
-      const aprs: Aprs = await fetchEternalFarmAPR();
-
       let _eternalFarmings: FormattedEternalFarming[] = [];
       // TODO
       // .filter(farming => +farming.bonusRewardRate || +farming.rewardRate)
@@ -925,8 +867,6 @@ export function useFarmingSubgraph() {
           true,
         );
         const multiplierToken = await fetchToken(farming.multiplierToken, true);
-
-        const apr = aprs[farming.id] ? aprs[farming.id] : NaN;
 
         _eternalFarmings = [
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -940,7 +880,6 @@ export function useFarmingSubgraph() {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             //@ts-ignore
             pool,
-            apr,
           },
         ];
       }
@@ -949,7 +888,7 @@ export function useFarmingSubgraph() {
     } catch (err) {
       setEternalFarms(null);
       if (err instanceof Error) {
-        throw new Error('Error while fetching infinite farms ' + err.message);
+        throw new Error('Error while fetching eternal farms ' + err.message);
       }
     } finally {
       setEternalFarmsLoading(false);
@@ -966,11 +905,6 @@ export function useFarmingSubgraph() {
       futureEvents,
       futureEventsLoading,
       fetchFutureEventsFn: fetchFutureEvents,
-    },
-    fetchAllEvents: {
-      allEvents,
-      allEventsLoading,
-      fetchAllEventsFn: fetchAllEvents,
     },
     fetchPositionsForPool: {
       positionsForPool,
@@ -996,6 +930,16 @@ export function useFarmingSubgraph() {
       eternalFarms,
       eternalFarmsLoading,
       fetchEternalFarmsFn: fetchEternalFarms,
+    },
+    fetchEternalFarmAprs: {
+      eternalFarmAprs,
+      eternalFarmAprsLoading,
+      fetchEternalFarmAprsFn: fetchEternalFarmAprs,
+    },
+    fetchEternalFarmTvls: {
+      eternalFarmTvls,
+      eternalFarmTvlsLoading,
+      fetchEternalFarmTvlsFn: fetchEternalFarmTvls,
     },
     fetchPositionsOnEternalFarmings: {
       positionsEternal,
