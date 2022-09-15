@@ -30,22 +30,14 @@ interface IRangeSelector {
   currencyA: Currency | null | undefined;
   currencyB: Currency | null | undefined;
   mintInfo: IDerivedMintInfo;
-  isCompleted: boolean;
-  additionalStep: boolean;
   priceFormat: PriceFormats;
-  disabled: boolean;
-  backStep: number;
 }
 
 export function SelectRange({
   currencyA,
   currencyB,
   mintInfo,
-  isCompleted,
-  additionalStep,
   priceFormat,
-  backStep,
-  disabled,
 }: IRangeSelector) {
   const [fullRangeWarningShown, setFullRangeWarningShown] = useState(true);
   const { startPriceTypedValue } = useV3MintState();
