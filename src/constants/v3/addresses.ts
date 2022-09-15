@@ -10,7 +10,6 @@ export enum V2Exchanges {
 
 type ExchangeAddressMap = { [exchange: V2Exchanges]: AddressMap };
 
-
 type AddressMap = { [chainId: number]: string };
 
 export const V3_CORE_FACTORY_ADDRESSES: AddressMap = {
