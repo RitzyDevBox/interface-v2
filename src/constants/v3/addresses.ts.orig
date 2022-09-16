@@ -2,6 +2,7 @@ import { ChainId } from '@uniswap/sdk';
 import { Token } from '@uniswap/sdk-core';
 import { Matic } from 'v3lib/entities/matic';
 
+<<<<<<< HEAD
 export enum V2Exchanges {
   Quickswap = 'Quickswap',
   SushiSwap = 'Sushiswap',
@@ -10,6 +11,9 @@ export enum V2Exchanges {
 
 type ExchangeAddressMap = { [exchange: V2Exchanges]: AddressMap };
 
+
+=======
+>>>>>>> 9a9cf245d05837f1f1ebefee65f2d9507b444222
 type AddressMap = { [chainId: number]: string };
 
 export const V3_CORE_FACTORY_ADDRESSES: AddressMap = {
@@ -39,7 +43,6 @@ export const MULTICALL_ADDRESS: AddressMap = {
 export const V3_MIGRATOR_ADDRESSES: AddressMap = {
   [ChainId.MATIC]: '0x157B9913E00204f8c980bb00aa62E22b0dAb1a63',
 };
-
 
 export const REAL_STAKER_ADDRESS: AddressMap = {
   [ChainId.MATIC]: '0x32CFF674763b06B983C0D55Ef2e41B84D16855bb',

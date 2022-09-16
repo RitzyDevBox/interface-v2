@@ -1,48 +1,46 @@
+import React, { useCallback, useMemo, useState } from "react";
 import { Contract } from "@ethersproject/contracts";
 import { CurrencyAmount, Fraction, Percent, Price, Token } from "@uniswap/sdk-core";
-import { useActiveWeb3React } from "../../hooks/web3";
-import useTheme from "../../hooks/useTheme";
-import { V2_FACTORY_ADDRESSES } from "../../constants/addresses";
-import { useIsNetworkFailed } from "../../hooks/useIsNetworkFailed";
-import { useSingleCallResult } from "../../state/multicall/hooks";
+import { useActiveWeb3React } from "hooks";
+import { useSingleCallResult } from "../../state/multicall/v3/hooks";
 import usePrevious from "../../hooks/usePrevious";
-import { useCallback, useMemo, useState } from "react";
-import useTransactionDeadline from "../../hooks/useTransactionDeadline";
-import useCurrentBlockTimestamp from "../../hooks/useCurrentBlockTimestamp";
-import { useUserSlippageToleranceWithDefault } from "../../state/user/hooks";
-import { unwrappedToken } from "../../utils/unwrappedToken";
 import JSBI from "jsbi";
-import { FeeAmount, Pool, Position, priceToClosestTick, TickMath } from "../../lib/src";
-import { PoolState, usePool } from "../../hooks/usePools";
 import { useRangeHopCallbacks, useV3DerivedMintInfo, useV3MintActionHandlers } from "../../state/mint/v3/hooks";
 import { Bound } from "../../state/mint/v3/actions";
-import { useV2MigratorContract } from "../../hooks/useContract";
-import { ApprovalState, useApproveCallback } from "../../hooks/useApproveCallback";
-import { useV2LiquidityTokenPermit } from "../../hooks/useERC20Permit";
+import { useTheme } from '@material-ui/core/styles';
 import { useIsTransactionPending, useTransactionAdder } from "../../state/transactions/hooks";
 import { TransactionResponse } from "@ethersproject/providers";
 import ReactGA from "react-ga";
-import { TransactionType } from "../../state/transactions/actions";
-import { currencyId } from "../../utils/currencyId";
-import { AutoColumn } from "../../components/Column";
-import { BlueCard, DarkGreyCard, LightCard, YellowCard } from "../../components/Card";
-import { RowBetween, RowFixed } from "../../components/Row";
-import DoubleCurrencyLogo from "../../components/DoubleLogo";
-import { TYPE } from "../../theme";
-import Badge, { BadgeVariant } from "../../components/Badge";
+import { TYPE } from "theme/index";
 import LiquidityInfo from "./LiquidityInfo";
 import { AlertCircle, AlertTriangle, ArrowDown } from "react-feather";
 import RateToggle from "../../components/RateToggle";
-import RangeSelector from "../../components/RangeSelector";
-import { formatCurrencyAmount } from "../../utils/formatCurrencyAmount";
 import { WMATIC_EXTENDED } from "../../constants/tokens";
-import { ButtonConfirmed } from "../../components/Button";
-import { Dots } from "../../components/swap/styled";
 import { Link } from "react-router-dom";
-import { SupportedChainId } from "../../constants/chains";
-import Card from "../../shared/components/Card/Card";
-
-import { t, Trans } from "@lingui/macro";
+import { V2_FACTORY_ADDRESSES } from "constants/v3/addresses";
+import { useIsNetworkFailed } from "hooks/v3/useIsNetworkFailed";
+import { FeeAmount, priceToClosestTick, TickMath } from "v3lib/utils";
+import { Position } from "v3lib/entities/position";
+import { Pool } from "v3lib/entities/pool";
+import { useV2LiquidityTokenPermit } from "hooks/v3/useERC20Permit";
+import { AutoColumn } from "components/v3/Column";
+import { RowBetween, RowFixed } from "components/v3/Row";
+import { DoubleCurrencyLogo } from "components";
+import Badge, { BadgeVariant } from "components/v3/Badge";
+import { Dots } from "components/v3/swap/styled";
+import Card from "components/v3/Card/Card";
+import { BlueCard, DarkGreyCard, YellowCard } from "components/v3/Card";
+import { RangeSelector } from "pages/PoolsPage/v3/SupplyLiquidityV3/components/RangeSelector";
+import { formatCurrencyAmount } from "utils/v3/formatCurrencyAmount";
+import { unwrappedToken } from "utils/unwrappedToken";
+import { PoolState, usePool } from "hooks/usePools";
+import { ApprovalState } from "hooks/useV3ApproveCallback";
+import { useV2ToV3MigratorContract } from "hooks/useContract";
+import useTransactionDeadline from "hooks/useTransactionDeadline";
+import useCurrentBlockTimestamp from "hooks/useCurrentBlockTimestamp";
+import { currencyId } from "utils/v3/currencyId";
+import { ChainId } from "@uniswap/sdk";
+import { ButtonConfirmed } from "components/v3/Button";
 
 interface V2PairMigrationProps {
     pair: Contract | null;
@@ -159,10 +157,10 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
     const [confirmingMigration, setConfirmingMigration] = useState<boolean>(false);
     const [pendingMigrationHash, setPendingMigrationHash] = useState<string | null>(null);
 
-    const migrator = useV2MigratorContract();
+    const migrator = useV2ToV3MigratorContract();
 
     // approvals
-    const [approval, approveManually] = useApproveCallback(pairBalance, migrator?.address);
+    const [approval, approveManually] = useV3ApproveCallback(pairBalance, migrator?.address);
     const { signatureData, gatherPermitSignature } = useV2LiquidityTokenPermit(pairBalance, migrator?.address);
 
     const approve = useCallback(async () => {
@@ -225,15 +223,15 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                 return migrator.multicall(data, { gasLimit: 10000000 }).then((response: TransactionResponse) => {
                     ReactGA.event({
                         category: "Migrate",
-                        action: `${isNotUniswap ? "SushiSwap" : "QuickSwap"}->Algebra`,
+                        action: `${isNotUniswap ? "SushiSwap" : "QuickSwap"}->Quickswap`,
                         label: `${currency0.symbol}/${currency1.symbol}`,
                     });
 
                     addTransaction(response, {
                         //@ts-ignore
                         type: TransactionType.MIGRATE_LIQUIDITY_V3,
-                        baseCurrencyId: currencyId(currency0, SupportedChainId.POLYGON),
-                        quoteCurrencyId: currencyId(currency1, SupportedChainId.POLYGON),
+                        baseCurrencyId: currencyId(currency0, ChainId.MATIC),
+                        quoteCurrencyId: currencyId(currency1, ChainId.MATIC),
                         isFork: _isNotUniswap,
                     });
                     setPendingMigrationHash(response.hash);
@@ -274,11 +272,11 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                 <AutoColumn gap="lg">
                     <RowBetween>
                         <RowFixed style={{ marginLeft: "8px" }}>
-                            <DoubleCurrencyLogo currency0={currency0} currency1={currency1} margin={false} size={24} />
+                            <DoubleCurrencyLogo currency0={currency0} currency1={currency1} size={24} />
                             <TYPE.mediumHeader style={{ marginLeft: "8px" }}>
-                                <Trans>
+                                
                                     {currency1.symbol}/{currency0.symbol} LP Tokens
-                                </Trans>
+                                
                             </TYPE.mediumHeader>
                         </RowFixed>
                         {pairFactory.result && (
@@ -305,14 +303,14 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                 <AutoColumn gap="lg">
                     <RowBetween>
                         <RowFixed style={{ marginLeft: "8px" }}>
-                            <DoubleCurrencyLogo currency0={currency0} currency1={currency1} margin={false} size={24} />
+                            <DoubleCurrencyLogo currency0={currency0} currency1={currency1} size={24} />
                             <TYPE.mediumHeader style={{ marginLeft: "8px" }}>
-                                <Trans>
+                                
                                     {currency1.symbol}/{currency0.symbol} LP NFT
-                                </Trans>
+                                
                             </TYPE.mediumHeader>
                         </RowFixed>
-                        <Badge variant={BadgeVariant.PRIMARY}>Algebra</Badge>
+                        <Badge variant={BadgeVariant.PRIMARY}>Quickswap</Badge>
                     </RowBetween>
 
                     {noLiquidity && (
@@ -326,19 +324,19 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                         >
                             <AlertCircle color={theme.text1} style={{ marginBottom: "12px", opacity: 0.8 }} />
                             <TYPE.body fontSize={14} style={{ marginBottom: 8, fontWeight: 500, opacity: 0.8 }} textAlign="center">
-                                <Trans>You are the first liquidity provider for this Algebra pool. Your liquidity will migrate at the current</Trans>
+                                You are the first liquidity provider for this Quickswap pool. Your liquidity will migrate at the current
                                 {_isNotUniswap ? "SushiSwap" : "QuickSwap"} price.
                             </TYPE.body>
 
                             <TYPE.body fontWeight={500} textAlign="center" fontSize={14} style={{ marginTop: "8px", opacity: 0.8 }}>
-                                <Trans>Your transaction cost will be much higher as it includes the gas to create the pool.</Trans>
+                                Your transaction cost will be much higher as it includes the gas to create the pool.
                             </TYPE.body>
 
                             {v2SpotPrice && (
                                 <AutoColumn gap="8px" style={{ marginTop: "12px" }}>
                                     <RowBetween>
                                         <TYPE.body fontWeight={500} fontSize={14}>
-                                            {_isNotUniswap ? "SushiSwap" : "QuickSwap"} {invertPrice ? currency1.symbol : currency0.symbol} <Trans>Price: </Trans>
+                                            {_isNotUniswap ? "SushiSwap" : "QuickSwap"} {invertPrice ? currency1.symbol : currency0.symbol} Price:
                                             {invertPrice ? `${v2SpotPrice?.invert()?.toSignificant(6)} ${currency0.symbol}` : `${v2SpotPrice?.toSignificant(6)} ${currency1.symbol}`}
                                         </TYPE.body>
                                     </RowBetween>
@@ -352,7 +350,7 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                             <AutoColumn gap="8px">
                                 <RowBetween>
                                     <TYPE.body fontSize={14}>
-                                        {_isNotUniswap ? "SushiSwap" : "QuickSwap"} {invertPrice ? currency1.symbol : currency0.symbol} <Trans>Price:</Trans>
+                                        {_isNotUniswap ? "SushiSwap" : "QuickSwap"} {invertPrice ? currency1.symbol : currency0.symbol} Price:
                                     </TYPE.body>
                                     <TYPE.black fontSize={14}>
                                         {invertPrice ? `${v2SpotPrice?.invert()?.toSignificant(6)} ${currency0.symbol}` : `${v2SpotPrice?.toSignificant(6)} ${currency1.symbol}`}
@@ -360,7 +358,7 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                                 </RowBetween>
 
                                 <RowBetween>
-                                    <TYPE.body fontSize={14}>{t`Algebra ${invertPrice ? currency1.symbol : currency0.symbol} Price:`}</TYPE.body>
+                                    <TYPE.body fontSize={14}>{`Quickswap ${invertPrice ? currency1.symbol : currency0.symbol} Price:`}</TYPE.body>
                                     <TYPE.black fontSize={14}>
                                         {invertPrice
                                             ? `${v3SpotPrice?.invert()?.toSignificant(6)} ${currency0.symbol}`
@@ -370,7 +368,7 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
 
                                 <RowBetween>
                                     <TYPE.body fontSize={14} color="inherit">
-                                        <Trans>Price Difference:</Trans>
+                                        Price Difference:
                                     </TYPE.body>
                                     <TYPE.black fontSize={14} color="inherit">
                                         {`${typeof priceDifferenceFraction !== "string" ? priceDifferenceFraction?.toSignificant(4) : priceDifferenceFraction}%`}
@@ -378,16 +376,14 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                                 </RowBetween>
                             </AutoColumn>
                             <TYPE.body fontSize={14} style={{ marginTop: 8, fontWeight: 400 }}>
-                                <Trans>
-                                    You should only deposit liquidity into Algebra at a price you believe is correct. <br />
+                                    You should only deposit liquidity into Quickswap at a price you believe is correct. <br />
                                     If the price seems incorrect, you can either make a swap to move the price or wait for someone else to do so.
-                                </Trans>
                             </TYPE.body>
                         </YellowCard>
                     ) : !noLiquidity && v3SpotPrice ? (
                         <RowBetween>
                             <TYPE.body fontSize={14}>
-                                <Trans>Algebra {invertPrice ? currency1.symbol : currency0.symbol} Price:</Trans>
+                                Quickswap {invertPrice ? currency1.symbol : currency0.symbol} Price:
                             </TYPE.body>
                             <TYPE.black fontSize={14}>
                                 {invertPrice ? `${v3SpotPrice?.invert()?.toSignificant(6)} ${currency0.symbol}` : `${v3SpotPrice?.toSignificant(6)} ${currency1.symbol}`}
@@ -397,7 +393,7 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
 
                     <RowBetween>
                         <TYPE.label>
-                            <Trans>Set Price Range</Trans>
+                            Set Price Range
                         </TYPE.label>
                         <RateToggle
                             currencyA={invertPrice ? currency1 : currency0}
@@ -421,10 +417,11 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                         onRightRangeInput={onRightRangeInput}
                         currencyA={invertPrice ? currency1 : currency0}
                         currencyB={invertPrice ? currency0 : currency1}
-                        feeAmount={feeAmount}
-                        ticksAtLimit={ticksAtLimit}
+                        // TODO: investigate why this was removed
+                        // ticksAtLimit={ticksAtLimit}
                         disabled={false}
-                        initial={false}
+                        // TODO: investigate why this was removed
+                        // initial={false}
                     />
 
                     {outOfRange ? (
@@ -432,7 +429,7 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                             <RowBetween>
                                 <AlertTriangle stroke={theme.yellow3} size="16px" />
                                 <TYPE.yellow ml="12px" fontSize="12px">
-                                    <Trans>Your position will not earn fees or be used in trades until the market price moves into your range.</Trans>
+                                    Your position will not earn fees or be used in trades until the market price moves into your range.
                                 </TYPE.yellow>
                             </RowBetween>
                         </YellowCard>
@@ -443,7 +440,7 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                             <RowBetween>
                                 <AlertTriangle stroke={theme.yellow3} size="16px" />
                                 <TYPE.yellow ml="12px" fontSize="12px">
-                                    <Trans>Invalid range selected. The min price must be lower than the max price.</Trans>
+                                    Invalid range selected. The min price must be lower than the max price.
                                 </TYPE.yellow>
                             </RowBetween>
                         </YellowCard>
@@ -455,10 +452,10 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                                 <LiquidityInfo token0Amount={position.amount0} token1Amount={position.amount1} />
                                 {chainId && refund0 && refund1 ? (
                                     <TYPE.black fontSize={12}>
-                                        <Trans>
+                                        
                                             At least {formatCurrencyAmount(refund0, 4)} {token0.equals(WMATIC_EXTENDED[chainId]) ? "MATIC" : token0.symbol} and {formatCurrencyAmount(refund1, 4)}{" "}
                                             {token1.equals(WMATIC_EXTENDED[chainId]) ? "MATIC" : token1.symbol} will be refunded to your wallet due to selected price range.
-                                        </Trans>
+                                        
                                     </TYPE.black>
                                 ) : null}
                             </AutoColumn>
@@ -475,15 +472,15 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                                 >
                                     {approval === ApprovalState.PENDING ? (
                                         <Dots>
-                                            <Trans>Approving</Trans>
+                                            Approving
                                         </Dots>
                                     ) : approval === ApprovalState.APPROVED || signatureData !== null ? (
                                         <span>
-                                            <Trans>Allowed</Trans>
+                                            Allowed
                                         </span>
                                     ) : (
                                         <span>
-                                            <Trans>Allow LP token migration</Trans>
+                                            Allow LP token migration
                                         </span>
                                     )}
                                 </ButtonConfirmed>
@@ -501,18 +498,18 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                                 onClick={isSuccessfullyMigrated ? null : migrate}
                             >
                                 {isSuccessfullyMigrated ? (
-                                    t`Success! View pools`
+                                    `Success! View pools`
                                 ) : isMigrationPending ? (
                                     <Dots>
-                                        <Trans>Migrating</Trans>
+                                        Migrating
                                     </Dots>
                                 ) : networkFailed ? (
                                     <span>
-                                        <Trans>Connecting to network...</Trans>
+                                        Connecting to network...
                                     </span>
                                 ) : (
                                     <span>
-                                        <Trans>Migrate</Trans>
+                                        Migrate
                                     </span>
                                 )}
                             </ButtonConfirmed>
@@ -523,3 +520,11 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
         </AutoColumn>
     );
 }
+function useV3ApproveCallback(pairBalance: CurrencyAmount<Token>, address: string | undefined): [any, any] {
+    throw new Error("Function not implemented.");
+}
+
+function useUserSlippageToleranceWithDefault(DEFAULT_MIGRATE_SLIPPAGE_TOLERANCE: Percent) {
+    throw new Error("Function not implemented.");
+}
+
