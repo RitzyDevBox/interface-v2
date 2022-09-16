@@ -8,7 +8,7 @@ export enum V2Exchanges {
   //Uniswap = 'Uniswap',
 }
 
-type ExchangeAddressMap = { [exchange: V2Exchanges]: AddressMap };
+type ExchangeAddressMap = { [exchange in V2Exchanges]: AddressMap };
 
 type AddressMap = { [chainId: number]: string };
 

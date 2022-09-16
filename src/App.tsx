@@ -40,6 +40,8 @@ const IncreaseLiquidityV3Page = lazy(() =>
   import('./pages/PoolsPage/v3/IncreaseLiquidityPage'),
 );
 const PositionPage = lazy(() => import('./pages/PoolsPage/v3/PositionPage'));
+const MigrateV2 = lazy(() => import('./pages/MigrateV2'));
+const MigrateV2Pair = lazy(() => import('./pages/MigrateV2/MigrateV2Pair'));
 
 import { PageLayout } from 'layouts';
 import { getLibrary } from 'utils';
@@ -64,6 +66,7 @@ import './i18n';
 import { mainTheme } from './theme';
 import Background from 'layouts/Background';
 import GasUpdater from 'state/application/gasUpdater';
+
 
 const Web3ProviderNetwork = createWeb3ReactRoot(
   GlobalConst.utils.NetworkContextName,
@@ -204,6 +207,8 @@ const App: React.FC = () => {
                           <ConvertQUICKPage />
                         </PageLayout>
                       </Route>
+                      <Route exact strict path="/migrate" component={MigrateV2} />
+                      <Route exact strict path="/migrate/:address" component={MigrateV2Pair} />
                       <Route exact path='/prdt'>
                         <PageLayout name='prdt'>
                           <PrdtPage />

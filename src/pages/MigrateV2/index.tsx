@@ -1,6 +1,6 @@
 import React, { useContext, useMemo } from "react";
 import { Token } from "@uniswap/sdk-core";
-import MigrateV2PositionCard from "components/PositionCard/V2";
+import MigrateV2PositionCard from "components/v3/PositionCard/V2";
 import { PairState, useV2Pairs } from "hooks/v3/useV2Pairs";
 import { Text } from "rebass";
 import { ThemeContext } from "styled-components/macro";

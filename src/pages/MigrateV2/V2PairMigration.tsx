@@ -7,14 +7,14 @@ import usePrevious from "../../hooks/usePrevious";
 import JSBI from "jsbi";
 import { useRangeHopCallbacks, useV3DerivedMintInfo, useV3MintActionHandlers } from "../../state/mint/v3/hooks";
 import { Bound } from "../../state/mint/v3/actions";
-import { useTheme } from '@material-ui/core/styles';
+import { useTheme } from 'styled-components';
 import { useIsTransactionPending, useTransactionAdder } from "../../state/transactions/hooks";
 import { TransactionResponse } from "@ethersproject/providers";
 import ReactGA from "react-ga";
 import { TYPE } from "theme/index";
 import LiquidityInfo from "./LiquidityInfo";
 import { AlertCircle, AlertTriangle, ArrowDown } from "react-feather";
-import RateToggle from "../../components/RateToggle";
+import RateToggle from "../../components/v3/RateToggle";
 import { WMATIC_EXTENDED } from "../../constants/tokens";
 import { Link } from "react-router-dom";
 import { V2_FACTORY_ADDRESSES } from "constants/v3/addresses";
@@ -427,7 +427,7 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                     {outOfRange ? (
                         <YellowCard padding="8px 12px" $borderRadius="12px">
                             <RowBetween>
-                                <AlertTriangle stroke={theme.yellow3} size="16px" />
+                                <AlertTriangle stroke={theme.yellow1} size="16px" />
                                 <TYPE.yellow ml="12px" fontSize="12px">
                                     Your position will not earn fees or be used in trades until the market price moves into your range.
                                 </TYPE.yellow>
@@ -438,7 +438,8 @@ export function V2PairMigration({ pair, pairBalance, totalSupply, reserve0, rese
                     {invalidRange ? (
                         <YellowCard padding="8px 12px" $borderRadius="12px">
                             <RowBetween>
-                                <AlertTriangle stroke={theme.yellow3} size="16px" />
+                                
+                                <AlertTriangle stroke={theme.yellow1} size="16px" />
                                 <TYPE.yellow ml="12px" fontSize="12px">
                                     Invalid range selected. The min price must be lower than the max price.
                                 </TYPE.yellow>
