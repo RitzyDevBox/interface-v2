@@ -33,7 +33,6 @@ import { Link } from 'react-router-dom';
 import { V2_FACTORY_ADDRESSES } from 'constants/v3/addresses';
 import { useIsNetworkFailed } from 'hooks/v3/useIsNetworkFailed';
 import { FeeAmount, priceToClosestTick, TickMath } from 'v3lib/utils';
-import { Position } from 'v3lib/entities/position';
 import { Pool } from 'v3lib/entities/pool';
 import { useV2LiquidityTokenPermit } from 'hooks/v3/useERC20Permit';
 import { AutoColumn } from 'components/v3/Column';
@@ -46,7 +45,6 @@ import { BlueCard, DarkGreyCard, YellowCard } from 'components/v3/Card';
 import { RangeSelector } from 'pages/PoolsPage/v3/SupplyLiquidityV3/components/RangeSelector';
 import { formatCurrencyAmount } from 'utils/v3/formatCurrencyAmount';
 import { unwrappedToken } from 'utils/unwrappedToken';
-import { PoolState, usePool } from 'hooks/usePools';
 import { ApprovalState } from 'hooks/useV3ApproveCallback';
 import { useV2ToV3MigratorContract } from 'hooks/useContract';
 import useTransactionDeadline from 'hooks/useTransactionDeadline';
@@ -54,6 +52,11 @@ import useCurrentBlockTimestamp from 'hooks/useCurrentBlockTimestamp';
 import { currencyId } from 'utils/v3/currencyId';
 import { ChainId } from '@uniswap/sdk';
 import { ButtonConfirmed } from 'components/v3/Button';
+import { useUserSlippageTolerance } from 'state/user/hooks';
+import { SelectRange } from 'pages/PoolsPage/v3/SupplyLiquidityV3/containers/SelectRange';
+import { PriceFormats } from 'components/v3/PriceFomatToggler';
+import { PoolState, usePool } from 'hooks/usePools';
+import { Position } from 'v3lib/entities';
 
 interface V2PairMigrationProps {
   pair: Contract | null;
@@ -79,6 +82,7 @@ export function V2PairMigration({
   const { chainId, account } = useActiveWeb3React();
   const theme = useTheme();
   const v2FactoryAddress = chainId ? V2_FACTORY_ADDRESSES[chainId] : undefined;
+  
   const DEFAULT_MIGRATE_SLIPPAGE_TOLERANCE = new Percent(75, 10_000);
 
   const networkFailed = useIsNetworkFailed();
@@ -98,12 +102,41 @@ export function V2PairMigration({
 
   const deadline = useTransactionDeadline(); // custom from users settings
   const blockTimestamp = useCurrentBlockTimestamp();
-  const allowedSlippage = useUserSlippageToleranceWithDefault(
-    DEFAULT_MIGRATE_SLIPPAGE_TOLERANCE,
-  ); // custom from users
+
+  const [allowedSlippage] = useUserSlippageTolerance();
+  const allowedSlippagePct = new Percent(JSBI.BigInt(allowedSlippage), JSBI.BigInt(10000));
 
   const currency0 = unwrappedToken(token0);
   const currency1 = unwrappedToken(token1);
+  const [feeAmount, setFeeAmount] = useState(FeeAmount.MEDIUM);
+  const [poolState, pool] = usePool(token0, token1);
+  const derivedMintInfo = useV3DerivedMintInfo(
+    currency0 ?? undefined,
+    currency1 ?? undefined,
+    feeAmount,
+    currency0 ?? undefined,
+    undefined,
+  );
+  const prevDerivedMintInfo = usePrevious({ ...derivedMintInfo });
+
+  const mintInfo = useMemo(() => {
+    if (
+      (!derivedMintInfo.pool ||
+        !derivedMintInfo.price ||
+        derivedMintInfo.noLiquidity) &&
+      prevDerivedMintInfo
+    ) {
+      return {
+        ...prevDerivedMintInfo,
+        pricesAtTicks: derivedMintInfo.pricesAtTicks,
+        ticks: derivedMintInfo.ticks,
+        parsedAmounts: derivedMintInfo.parsedAmounts,
+      };
+    }
+    return {
+      ...derivedMintInfo,
+    };
+  }, [derivedMintInfo, currency0, currency1]);
 
   // this is just getLiquidityValue with the fee off, but for the passed pair
   const token0Value = useMemo(
@@ -130,8 +163,6 @@ export function V2PairMigration({
   );
 
   // set up v3 pool
-  const [feeAmount, setFeeAmount] = useState(FeeAmount.MEDIUM);
-  const [poolState, pool] = usePool(token0, token1);
   const noLiquidity = poolState === PoolState.NOT_EXISTS;
 
   // get spot prices + price difference
@@ -204,6 +235,8 @@ export function V2PairMigration({
     noLiquidity,
   );
 
+  
+
   // the v3 tick is either the pool's tickCurrent, or the tick closest to the v2 spot price
   const tick = pool?.tickCurrent ?? priceToClosestTick(v2SpotPrice);
   // the price is either the current v3 price, or the price at the tick
@@ -226,12 +259,12 @@ export function V2PairMigration({
   const { amount0: v3Amount0Min, amount1: v3Amount1Min } = useMemo(
     () =>
       position
-        ? position.mintAmountsWithSlippage(allowedSlippage)
+        ? position.mintAmountsWithSlippage(allowedSlippagePct)
         : {
             amount0: undefined,
             amount1: undefined,
           },
-    [position, allowedSlippage],
+    [position, allowedSlippagePct],
   );
 
   const refund0 = useMemo(
@@ -594,7 +627,14 @@ export function V2PairMigration({
             />
           </RowBetween>
 
-          <RangeSelector
+          <SelectRange
+            currencyA={invertPrice ? currency1 : currency0}
+            currencyB={invertPrice ? currency0 : currency1}
+            mintInfo={mintInfo}
+            priceFormat={PriceFormats.TOKEN}
+          />
+
+          {/* <RangeSelector
             priceLower={priceLower}
             priceUpper={priceUpper}
             getDecrementLower={getDecrementLower}
@@ -607,10 +647,15 @@ export function V2PairMigration({
             currencyB={invertPrice ? currency0 : currency1}
             // TODO: investigate why this was removed
             // ticksAtLimit={ticksAtLimit}
-            disabled={false}
+            disabled={false} 
+            isBeforePrice={false} 
+            isAfterPrice={false} 
+            
+            priceFormat={"c:/source/interface-v2/src/components/v3/PriceFomatToggler/index".TOKEN} 
+            mintInfo={undefined}            
             // TODO: investigate why this was removed
             // initial={false}
-          />
+          /> */}
 
           {outOfRange ? (
             <YellowCard padding='8px 12px' $borderRadius='12px'>
@@ -727,11 +772,5 @@ function useV3ApproveCallback(
   pairBalance: CurrencyAmount<Token>,
   address: string | undefined,
 ): [any, any] {
-  throw new Error('Function not implemented.');
-}
-
-function useUserSlippageToleranceWithDefault(
-  DEFAULT_MIGRATE_SLIPPAGE_TOLERANCE: Percent,
-) {
   throw new Error('Function not implemented.');
 }

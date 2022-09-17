@@ -1,6 +1,5 @@
 import { Currency } from '@uniswap/sdk-core';
 import JSBI from 'jsbi';
-import { PoolState, usePool } from './usePools';
 import { useMemo } from 'react';
 import computeSurroundingTicks from 'utils/v3/computeSurroundingTicks';
 import { useAllV3TicksQuery } from 'state/data/enhanced';

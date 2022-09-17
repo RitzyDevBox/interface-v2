@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { PoolState, usePool } from 'hooks/v3/usePools';
 import { useToken } from 'hooks/v3/Tokens';
 import { Price, Token, Percent } from '@uniswap/sdk-core';
 import Loader from 'components/Loader';
