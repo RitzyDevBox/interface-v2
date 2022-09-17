@@ -55,7 +55,7 @@ import { ButtonConfirmed } from 'components/v3/Button';
 import { useUserSlippageTolerance } from 'state/user/hooks';
 import { SelectRange } from 'pages/PoolsPage/v3/SupplyLiquidityV3/containers/SelectRange';
 import { PriceFormats } from 'components/v3/PriceFomatToggler';
-import { PoolState, usePool } from 'hooks/usePools';
+import { PoolState, usePool } from 'hooks/v3/usePools';
 import { Position } from 'v3lib/entities';
 
 interface V2PairMigrationProps {
