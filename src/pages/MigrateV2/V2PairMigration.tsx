@@ -45,7 +45,7 @@ import { BlueCard, DarkGreyCard, YellowCard } from 'components/v3/Card';
 import { RangeSelector } from 'pages/PoolsPage/v3/SupplyLiquidityV3/components/RangeSelector';
 import { formatCurrencyAmount } from 'utils/v3/formatCurrencyAmount';
 import { unwrappedToken } from 'utils/unwrappedToken';
-import { ApprovalState } from 'hooks/useV3ApproveCallback';
+import { ApprovalState, useApproveCallback } from 'hooks/useV3ApproveCallback';
 import { useV2ToV3MigratorContract } from 'hooks/useContract';
 import useTransactionDeadline from 'hooks/useTransactionDeadline';
 import useCurrentBlockTimestamp from 'hooks/useCurrentBlockTimestamp';
@@ -297,7 +297,7 @@ export function V2PairMigration({
   const migrator = useV2ToV3MigratorContract();
 
   // approvals
-  const [approval, approveManually] = useV3ApproveCallback(
+  const [approval, approveManually] = useApproveCallback(
     pairBalance,
     migrator?.address,
   );
@@ -768,10 +768,4 @@ export function V2PairMigration({
       </Card>
     </AutoColumn>
   );
-}
-function useV3ApproveCallback(
-  pairBalance: CurrencyAmount<Token>,
-  address: string | undefined,
-): [any, any] {
-  throw new Error('Function not implemented.');
 }
