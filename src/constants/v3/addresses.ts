@@ -40,7 +40,6 @@ export const V3_MIGRATOR_ADDRESSES: AddressMap = {
   [ChainId.MATIC]: '0x157B9913E00204f8c980bb00aa62E22b0dAb1a63',
 };
 
-
 export const REAL_STAKER_ADDRESS: AddressMap = {
   [ChainId.MATIC]: '0x32CFF674763b06B983C0D55Ef2e41B84D16855bb',
 };
@@ -62,22 +61,24 @@ export const V2_FACTORY_ADDRESSES: AddressMap = {
 };
 
 export const EXCHANGE_FACTORY_ADDRESS_MAPS: ExchangeAddressMap = {
-  [V2Exchanges.Quickswap] : {
+  [V2Exchanges.Quickswap]: {
     [ChainId.MATIC]: '0x5757371414417b8C6CAad45bAeF941aBc7d3Ab32',
   },
-  [V2Exchanges.SushiSwap] : {
+  [V2Exchanges.SushiSwap]: {
     [ChainId.MATIC]: '0xc35dadb65012ec5796536bd9864ed8773abc74c4',
-  }
+  },
 };
 
 export const EXCHANGE_PAIR_INIT_HASH_MAPS: ExchangeAddressMap = {
-  [V2Exchanges.Quickswap] : {
+  [V2Exchanges.Quickswap]: {
     //TODO: Verify the Pair INIT hash
-    [ChainId.MATIC]: '0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f'
+    [ChainId.MATIC]:
+      '0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f',
   },
-  [V2Exchanges.SushiSwap] : {
-    [ChainId.MATIC]: '0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303',
-  }
+  [V2Exchanges.SushiSwap]: {
+    [ChainId.MATIC]:
+      '0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303',
+  },
 };
 
 export const V2_ROUTER_ADDRESS: AddressMap = {

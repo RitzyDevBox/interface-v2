@@ -66,7 +66,16 @@ export const COMMON_BASES: ChainCurrencyList = {
 // used to construct the list of all pairs we consider by default in the frontend
 export const BASES_TO_TRACK_LIQUIDITY_FOR: ChainTokenList = {
   ...WETH_ONLY,
-  [ChainId.MATIC]: [...WETH_ONLY[ChainId.MATIC], DAI, USDC, USDT, OLD_QUICK, NEW_QUICK, ETHER, WBTC],
+  [ChainId.MATIC]: [
+    ...WETH_ONLY[ChainId.MATIC],
+    DAI,
+    USDC,
+    USDT,
+    OLD_QUICK,
+    NEW_QUICK,
+    ETHER,
+    WBTC,
+  ],
 };
 export const PINNED_PAIRS: { readonly [chainId: number]: [Token, Token][] } = {
   [ChainId.MATIC]: [[USDC, USDT]],

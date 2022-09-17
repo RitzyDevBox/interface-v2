@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Link } from 'react-router-dom'
+import { Link } from 'react-router-dom';
 import { Text, TextProps as TextPropsOriginal } from 'rebass';
 import styled, {
   ThemeProvider as StyledComponentsThemeProvider,
@@ -139,7 +139,7 @@ export const StyledInternalLink = styled(Link)`
     :active {
         text-decoration: none;
     }
-`
+`;
 
 const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
