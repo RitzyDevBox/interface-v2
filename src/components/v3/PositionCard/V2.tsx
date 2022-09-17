@@ -1,5 +1,5 @@
+import React, { useState } from 'react';
 import JSBI from 'jsbi';
-import { useState } from 'react';
 import { CurrencyAmount, Percent, Token } from '@uniswap/sdk-core';
 import { ChevronDown, ChevronUp } from 'react-feather';
 import { Link, NavLink } from 'react-router-dom';
@@ -115,20 +115,20 @@ export default function V2PositionCard({
                 color: sushi ? '#48b9cd' : '#f241a5',
                 minWidth: '100px',
               }}
-              ref={(element) => {
-                if (element) {
-                  element.style.setProperty(
-                    'margin-left',
-                    `${window.innerWidth < 600 ? '0' : 'auto'}`,
-                    'important',
-                  );
-                  element.style.setProperty(
-                    'margin-right',
-                    '6rem',
-                    'important',
-                  );
-                }
-              }}
+              // ref={(element) => {
+              //   if (element) {
+              //     element.style.setProperty(
+              //       'margin-left',
+              //       `${window.innerWidth < 600 ? '0' : 'auto'}`,
+              //       'important',
+              //     );
+              //     element.style.setProperty(
+              //       'margin-right',
+              //       '6rem',
+              //       'important',
+              //     );
+              //   }
+              // }}
             >
               {sushi ? 'SushiSwap' : 'QuickSwap'}
             </Badge>
