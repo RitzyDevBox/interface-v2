@@ -1,5 +1,6 @@
 import { Currency } from '@uniswap/sdk-core';
 import JSBI from 'jsbi';
+import { PoolState, usePool } from './usePools';
 import { useMemo } from 'react';
 import computeSurroundingTicks from 'utils/v3/computeSurroundingTicks';
 import { useAllV3TicksQuery } from 'state/data/enhanced';
@@ -8,7 +9,6 @@ import { skipToken } from '@reduxjs/toolkit/query/react';
 import { FeeAmount } from 'v3lib/utils/v3constants';
 import { Pool } from 'v3lib/entities/pool';
 import { tickToPrice } from 'v3lib/utils/priceTickConversions';
-import { PoolState, usePool } from 'hooks/usePools';
 
 const PRICE_FIXED_DIGITS = 8;
 

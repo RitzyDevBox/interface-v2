@@ -1,6 +1,7 @@
 import { Currency } from '@uniswap/sdk-core';
 import { useActiveWeb3React } from 'hooks';
-import { Pool, Position, Route } from 'v3lib/entities';
+import { Pool } from 'lib/src/pool';
+import { Route } from 'lib/src/route';
 import { useMemo } from 'react';
 import { useV3SwapPools } from './useV3SwapPools';
 

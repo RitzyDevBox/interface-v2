@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { PoolState, usePool } from 'hooks/v3/usePools';
 import { useToken } from 'hooks/v3/Tokens';
 import { Price, Token, Percent } from '@uniswap/sdk-core';
 import Loader from 'components/Loader';
@@ -23,7 +24,6 @@ import { useHistory } from 'react-router-dom';
 import { ExpandLess, ExpandMore } from '@material-ui/icons';
 import Badge, { BadgeVariant } from 'components/v3/Badge';
 import PositionListItemDetails from '../PositionListItemDetails';
-import { PoolState, usePool } from 'hooks/usePools';
 
 interface PositionListItemProps {
   positionDetails: PositionPool;

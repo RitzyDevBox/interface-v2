@@ -1,6 +1,6 @@
 import { Currency } from '@uniswap/sdk-core';
 import { PoolState, usePools } from 'hooks/usePools';
-import { Pool, Position } from 'v3lib/entities';
+import { Pool } from 'lib/src/pool';
 import { useMemo } from 'react';
 import { useAllCurrencyCombinations } from './useAllCurrencyCombinations';
 
