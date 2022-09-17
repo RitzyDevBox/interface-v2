@@ -19,7 +19,7 @@ import {
   typeStartPriceInput,
 } from './actions';
 import { tryParseTick } from './utils';
-import { PoolState, usePool } from 'hooks/v3/usePools';
+import { PoolState, usePool } from 'hooks/usePools';
 import { useAppDispatch, useAppSelector } from 'state/hooks';
 import { Pool } from 'v3lib/entities/pool';
 import { Position } from 'v3lib/entities';

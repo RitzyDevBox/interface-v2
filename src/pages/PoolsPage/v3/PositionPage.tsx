@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { PoolState, usePool } from 'hooks/v3/usePools';
+import { PoolState, usePool } from 'hooks/usePools';
 import { useToken } from 'hooks/v3/Tokens';
 import { useV3PositionFromTokenId } from 'hooks/v3/useV3Positions';
 import { NavLink, useParams } from 'react-router-dom';

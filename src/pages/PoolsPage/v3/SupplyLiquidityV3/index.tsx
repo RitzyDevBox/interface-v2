@@ -32,7 +32,6 @@ import {
   PriceFormatToggler,
 } from 'components/v3/PriceFomatToggler';
 import { AddLiquidityButton } from './containers/AddLiquidityButton';
-import { PoolState } from 'hooks/v3/usePools';
 import { RouterGuard } from './routing/router-guards';
 import { useAppDispatch } from 'state/hooks';
 // import SettingsTab from "components/Settings";
@@ -47,6 +46,7 @@ import { Box, Button } from '@material-ui/core';
 import useParsedQueryString from 'hooks/useParsedQueryString';
 import { SettingsModal } from 'components';
 import { ReactComponent as SettingsIcon } from 'assets/images/SettingsIcon.svg';
+import { PoolState } from 'hooks/usePools';
 
 export function SupplyLiquidityV3() {
   const params: any = useParams();
@@ -475,11 +475,7 @@ export function SupplyLiquidityV3() {
           currencyA={baseCurrency}
           currencyB={quoteCurrency}
           mintInfo={mintInfo}
-          disabled={!stepPair}
-          isCompleted={stepRange}
-          additionalStep={stepInitialPrice}
           priceFormat={priceFormat}
-          backStep={stepInitialPrice ? 1 : 0}
         />
         <Box mt={4}>
           <EnterAmounts
