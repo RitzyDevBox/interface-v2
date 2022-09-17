@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { PropsWithChildren } from 'react';
 import './index.scss';
 import { Box } from '@material-ui/core';
 import { MouseoverTooltip } from '../Tooltip';
@@ -19,7 +19,7 @@ interface BadgeProps {
   tooltip?: string;
 }
 
-export default function Badge({ variant, icon, text, tooltip }: BadgeProps) {
+export default function Badge({ variant, icon, text, tooltip}: PropsWithChildren<BadgeProps>) {
   const BadgeComponent = () => (
     <Box
       className={`v3-badge ${

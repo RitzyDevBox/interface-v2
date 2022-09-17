@@ -1,12 +1,10 @@
 import React, { useContext, useMemo } from "react";
 import { Token } from "@uniswap/sdk-core";
 import MigrateV2PositionCard from "components/v3/PositionCard/V2";
-import { PairState, useV2Pairs } from "hooks/v3/useV2Pairs";
+import { PairState, useV2Pairs, useTrackedTokenPairs } from "hooks/v3/useV2Pairs";
 import { Text } from "rebass";
 import { ThemeContext } from "styled-components/macro";
-
 import { useActiveWeb3React } from "hooks";
-import { toV2LiquidityToken, useTrackedTokenPairs } from "../../state/user/hooks";
 import { useTokenBalancesWithLoadingIndicator } from "state/wallet/v3/hooks";
 import { StyledInternalLink, TYPE } from "theme/index";
 import { Helmet } from "react-helmet";
@@ -16,8 +14,8 @@ import Card from "components/v3/Card/Card";
 import { Dots } from "components/v3/swap/styled";
 import { V2Exchanges, V2_FACTORY_ADDRESSES } from "constants/v3/addresses";
 import { useIsNetworkFailed } from "hooks/v3/useIsNetworkFailed";
-import { toSushiLiquidityToken } from "utils/v3/toSushiLiquidityToken";
 import { usePreviousNonEmptyArray } from "hooks/usePrevious";
+import { toV2LiquidityToken } from "utils/v3/computePairAddress";
 
 
 
@@ -36,10 +34,10 @@ export default function MigrateV2() {
     const tokenPairsWithLiquidityTokens = useMemo(() => {
         return trackedTokenPairs.map((tokens) => {
             // sushi liquidity token or null
-            const sushiLiquidityToken = chainId === 137 ? toSushiLiquidityToken(tokens) : null;
+            const sushiLiquidityToken = chainId === 137 ? toV2LiquidityToken({tokens, exchange: V2Exchanges.SushiSwap}) : null;
 
             return {
-                v2liquidityToken: v2FactoryAddress ? toV2LiquidityToken(tokens) : undefined,
+                v2liquidityToken: v2FactoryAddress ? toV2LiquidityToken({tokens, exchange: V2Exchanges.Quickswap}) : undefined,
                 sushiLiquidityToken,
                 tokens,
             };

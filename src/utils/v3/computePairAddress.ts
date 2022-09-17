@@ -13,6 +13,8 @@ import { V2_FACTORY_ADDRESSES } from 'constants/v3/addresses';
 import { ChainId } from '@uniswap/sdk';
 
 export const FACTORY_ADDRESS = V2_FACTORY_ADDRESSES[ChainId.MATIC];
+export const INIT_CODE_HASH =
+  '0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f';
 export const MINIMUM_LIQUIDITY = JSBI.BigInt(1000);
 
 // exports for internal consumption
@@ -22,38 +24,47 @@ export const FIVE = JSBI.BigInt(5);
 export const _997 = JSBI.BigInt(997);
 export const _1000 = JSBI.BigInt(1000);
 
-export const computePairAddress = ({
-  factoryAddress,
-  hash = INIT_CODE_HASH,
-  tokenA,
-  tokenB,
-}: {
-  factoryAddress: string;
-  tokenA: Token;
-  tokenB: Token;
-  hash?: string;
-}): string => {
-  const [token0, token1] = tokenA.sortsBefore(tokenB)
-    ? [tokenA, tokenB]
-    : [tokenB, tokenA]; // does safety checks
+import { EXCHANGE_FACTORY_ADDRESS_MAPS, EXCHANGE_PAIR_INIT_HASH_MAPS, V2Exchanges } from 'constants/v3/addresses';
 
-  return getCreate2Address(
-    factoryAddress,
-    keccak256(
-      ['bytes'],
-      [pack(['address', 'address'], [token0.address, token1.address])],
-    ),
-    hash,
-  );
+type ExchangeDetails = { [exchange in V2Exchanges]: {decimals: number, symbol: string, name: string } };
+
+//TODO: Move to where the other V2Exchanges Information is
+export const EXCHANGE_DETAIL_MAP: ExchangeDetails = {
+    [V2Exchanges.Quickswap]: { decimals: 18, symbol: 'QUICK-V2', name: 'Quickswap V2'},
+    [V2Exchanges.SushiSwap]: { decimals: 18, symbol: 'SLP', name: 'SushiSwap LP Token'}
 };
+
+export function toV2LiquidityToken({tokens: [tokenA, tokenB], exchange}: {tokens: [Token, Token], exchange: V2Exchanges}): Token {
+
+    const exchangeDetail = EXCHANGE_DETAIL_MAP[exchange];
+    return new Token(
+      tokenA.chainId,
+      computePairAddress({tokenA, tokenB, exchange}),
+      exchangeDetail.decimals,
+      exchangeDetail.symbol,
+      exchangeDetail.name
+    );
+}
+
+export const computePairAddress = ({ tokenA, tokenB, exchange }: { tokenA: Token; tokenB: Token; exchange: V2Exchanges; }): string => {
+    const factoryAddress = EXCHANGE_FACTORY_ADDRESS_MAPS[exchange][137];
+    const initHash = EXCHANGE_PAIR_INIT_HASH_MAPS[exchange][137];
+    const [token0, token1] = tokenA.sortsBefore(tokenB) ? [tokenA, tokenB] : [tokenB, tokenA] // does safety checks
+    return getCreate2Address(factoryAddress,
+        keccak256(['bytes'], [pack(['address', 'address'], [token0.address, token1.address])]),
+        initHash
+    )
+}
 
 export class Pair {
   public readonly liquidityToken: Token;
   private readonly tokenAmounts: [CurrencyAmount<Token>, CurrencyAmount<Token>];
+  private readonly exchange: V2Exchanges;
 
   public constructor(
     currencyAmountA: CurrencyAmount<Token>,
     tokenAmountB: CurrencyAmount<Token>,
+    exchange: V2Exchanges
   ) {
     const tokenAmounts = currencyAmountA.currency.sortsBefore(
       tokenAmountB.currency,
@@ -61,14 +72,9 @@ export class Pair {
       ? [currencyAmountA, tokenAmountB]
       : [tokenAmountB, currencyAmountA];
 
-    this.liquidityToken = new Token(
-      tokenAmounts[0].currency.chainId,
-      Pair.getAddress(tokenAmounts[0].currency, tokenAmounts[1].currency),
-      18,
-      'UNI-V2',
-      'Uniswap V2',
-    );
-
+    this.exchange = exchange;
+    this.liquidityToken = toV2LiquidityToken({ tokens: [tokenAmounts[0].currency, tokenAmounts[1].currency], exchange })
+    
     this.tokenAmounts = tokenAmounts as [
       CurrencyAmount<Token>,
       CurrencyAmount<Token>,
@@ -124,12 +130,11 @@ export class Pair {
     return this.tokenAmounts[1];
   }
 
-  public static getAddress(tokenA: Token, tokenB: Token): string {
+  public static getAddress(tokenA: Token, tokenB: Token, exchange: V2Exchanges): string {
     return computePairAddress({
-      factoryAddress: FACTORY_ADDRESS,
       tokenA,
       tokenB,
-      hash: INIT_CODE_HASH,
+      exchange,
     });
   }
 
@@ -189,6 +194,7 @@ export class Pair {
       new Pair(
         inputReserve.add(inputAmount),
         outputReserve.subtract(outputAmount),
+        this.exchange,
       ),
     ];
   }
@@ -230,6 +236,7 @@ export class Pair {
       new Pair(
         inputReserve.add(inputAmount),
         outputReserve.subtract(outputAmount),
+        this.exchange
       ),
     ];
   }

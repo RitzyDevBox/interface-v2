@@ -72,8 +72,8 @@ export const EXCHANGE_FACTORY_ADDRESS_MAPS: ExchangeAddressMap = {
 
 export const EXCHANGE_PAIR_INIT_HASH_MAPS: ExchangeAddressMap = {
   [V2Exchanges.Quickswap] : {
-    [ChainId.MATIC]: '',
-    //0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f
+    //TODO: Verify the Pair INIT hash
+    [ChainId.MATIC]: '0x96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f'
   },
   [V2Exchanges.SushiSwap] : {
     [ChainId.MATIC]: '0xe18a34eb0e04b04f7a0ac29a6e80748dca96319b42c54d679cb821dca90c6303',
