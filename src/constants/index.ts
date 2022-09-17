@@ -427,7 +427,7 @@ export const GlobalData = {
     },
   },
   pairs: {
-     PINNED_PAIRS: {
+    PINNED_PAIRS: {
       [ChainId.MATIC]: [
         [GlobalValue.tokens.COMMON.USDC, GlobalValue.tokens.COMMON.USDT],
         [GlobalValue.tokens.COMMON.USDC, GlobalValue.tokens.COMMON.DAI],

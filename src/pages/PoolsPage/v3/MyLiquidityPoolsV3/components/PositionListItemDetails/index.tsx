@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { PoolState, usePool } from 'hooks/v3/usePools';
+import { PoolState, usePool } from 'hooks/usePools';
 import { useToken } from 'hooks/v3/Tokens';
 import { useDerivedPositionInfo } from 'hooks/v3/useDerivedPositionInfo';
 import { useV3PositionFromTokenId } from 'hooks/v3/useV3Positions';

@@ -20,7 +20,13 @@ interface BadgeProps {
   style?: CSSProperties | undefined;
 }
 
-export default function Badge({ variant, icon, text, tooltip, style}: PropsWithChildren<BadgeProps>) {
+export default function Badge({
+  variant,
+  icon,
+  text,
+  tooltip,
+  style,
+}: PropsWithChildren<BadgeProps>) {
   const BadgeComponent = () => (
     <Box
       style={style}

@@ -82,7 +82,7 @@ export function V2PairMigration({
   const { chainId, account } = useActiveWeb3React();
   const theme = useTheme();
   const v2FactoryAddress = chainId ? V2_FACTORY_ADDRESSES[chainId] : undefined;
-  
+
   const DEFAULT_MIGRATE_SLIPPAGE_TOLERANCE = new Percent(75, 10_000);
 
   const networkFailed = useIsNetworkFailed();
@@ -104,7 +104,10 @@ export function V2PairMigration({
   const blockTimestamp = useCurrentBlockTimestamp();
 
   const [allowedSlippage] = useUserSlippageTolerance();
-  const allowedSlippagePct = new Percent(JSBI.BigInt(allowedSlippage), JSBI.BigInt(10000));
+  const allowedSlippagePct = new Percent(
+    JSBI.BigInt(allowedSlippage),
+    JSBI.BigInt(10000),
+  );
 
   const currency0 = unwrappedToken(token0);
   const currency1 = unwrappedToken(token1);
@@ -234,8 +237,6 @@ export function V2PairMigration({
   const { onLeftRangeInput, onRightRangeInput } = useV3MintActionHandlers(
     noLiquidity,
   );
-
-  
 
   // the v3 tick is either the pool's tickCurrent, or the tick closest to the v2 spot price
   const tick = pool?.tickCurrent ?? priceToClosestTick(v2SpotPrice);

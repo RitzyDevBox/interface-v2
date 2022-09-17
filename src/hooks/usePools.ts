@@ -9,6 +9,7 @@ import { useToken } from './Tokens';
 import { usePreviousNonErroredArray } from './usePrevious';
 import { computePoolAddress } from './v3/computePoolAddress';
 import { useMultipleContractSingleData } from 'state/multicall/v3/hooks';
+import { Pool } from 'v3lib/entities';
 
 const POOL_STATE_INTERFACE = new Interface(abi);
 
